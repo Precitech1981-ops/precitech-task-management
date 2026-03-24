@@ -1,0 +1,827 @@
+Input
+{"file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "offset": 600, "limit": 50}
+Result
+   600→const TEAM_MEMBERS = [
+   603→  {name: 'Kanhaiya Pandey', email: 'tech.precitech1981@gmail.com'},
+   604→  {name: 'Shilpa Das', email: 'hr.precitech1981@gmail.com'},
+   605→  {name: 'Raushan Kumar', email: 'raushan.precitech1981@gmail.com'},
+   607→  {name: 'Raghvendra Shakya', email: 'raghvendra.precitech1981@gmail.com'},
+   608→  {name: 'Manish Kumar', email: 'manish.precitech1981@gmail.com'},
+   609→  {name: 'Bhakti Ram', email: 'bhakti.precitech1981@gmail.com'},
+   610→  {name: 'Garv Sachdeva', email: 'garv.precitech1981@gmail.com'},
+   611→  {name: 'Vikash Kumar', email: 'vikash.precitech1981@gmail.com'},
+   613→  {name: 'Sobran Singh', email: 'sobranprecitech1981@gmail.com'},
+   614→  {name: 'Arvind Kumar Yadav', email: 'arvind.precitech1981@gmail.com'},
+   615→  {name: 'Amit Singh', email: 'amit.precitech1981@gmail.com'},
+   616→  {name: 'Pramod Kumar', email: 'pramod.precitech1981@gmail.com'},
+   617→  {name: 'Dharmendra Singh', email: 'dharmendra.precitech1981@gmail.com'},
+   618→  {name: 'Binod Kumar', email: 'binod.precitech1981@gmail.com'},
+   619→  {name: 'Vinay Sharma', email: 'vinay.precitech1981@gmail.com'},
+   620→  {name: 'Vaibhav Wadhwa', email: 'production@precitech1981.com'},
+   621→  {name: 'Deepak Singh', email: 'supplychain@precitech1981.com'},
+   622→  {name: 'Raushan Kumar', email: 'accounts@precitech1981.com'},
+   623→  {name: 'Chandan Kumar', email: 'quality@precitech1981.com'},
+   624→  {name: 'Devanshu Arora', email: 'devanshuarora@precitech1981.com'}
+   625→];
+   626→
+   627→// ============================================================
+   628→//  STATE
+   629→// ============================================================
+   630→let currentUser = null;
+   631→let allTasks = [];
+   632→let pendingCompleteTaskId = null;
+   633→let activeCommentTaskId = null;
+   634→let filterActive = false;
+   635→
+   636→// ============================================================
+   637→//  STORAGE HELPERS
+   638→// ============================================================
+   639→function getTasks() {
+   640→  // Synchronous read from cache (populated by listener)
+   641→  return window.cachedTasks || [];
+   642→}
+   643→
+   644→// Firebase listener for real-time tasks sync
+   645→window.cachedTasks = [];
+   646→database.ref('tasks').on('value', (snapshot) => {
+   647→  window.cachedTasks = snapshot.val() ? Object.values(snapshot.val()) : [];
+   648→  allTasks = window.cachedTasks;
+   649→  if (currentUser) {
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions 
+Input
+{"pattern": "assign-to|Assign To", "path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "output_mode": "content", "-n": true, "-B": 5, "-A": 10}
+Result
+484-      <button onclick="closeModal('assign-modal')" class="text-white hover:text-orange-200"><i class="fa-solid fa-times text-xl"></i></button>
+485-    </div>
+486-    <div class="p-6 space-y-4">
+487-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+488-        <div class="sm:col-span-2">
+489:          <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Assign To *</label>
+490:          <select id="assign-to" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-orange-400 outline-none">
+491-            <option value="">-- Select Member --</option>
+492-          </select>
+493-        </div>
+494-        <div class="sm:col-span-2">
+495-          <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Description *</label>
+496-          <div class="relative">
+497-            <textarea id="assign-desc" rows="3" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 pr-12 focus:ring-2 focus:ring-orange-400 outline-none resize-none" placeholder="What needs to be done? Ya mic dabao aur bolo..."></textarea>
+498-            <button type="button" id="mic-btn" onclick="toggleVoiceInput()" title="Mic se bolo"
+499-              class="absolute bottom-2.5 right-2.5 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200"
+500-              style="background-color: #ff6929;">
+--
+874-      o.innerText = m.name + ' (' + m.email.split('@')[0] + ')'; 
+875-      sel.appendChild(o);
+876-    });
+877-  }
+878-
+879:  // Populate assign-to dropdown
+880:  const asel = document.getElementById('assign-to');
+881-  TEAM_MEMBERS.forEach(m => {
+882-    const o = document.createElement('option'); o.value = m; o.innerText = m; asel.appendChild(o);
+883-  });
+884-
+885-  checkDeadlineNotifications();
+886-  showSection('dashboard');
+887-  setInterval(checkDeadlineNotifications, 60 * 60 * 1000);
+888-}
+889-
+890-// ============================================================
+--
+1325-
+1326-// ============================================================
+1327-//  ASSIGN TASK
+1328-// ============================================================
+1329-function submitTask() {
+1330:  const to = document.getElementById('assign-to').value;
+1331-  const desc = document.getElementById('assign-desc').value.trim();
+1332-  const date = document.getElementById('assign-date').value;
+1333-  const priority = document.getElementById('assign-priority').value;
+1334-
+1335-  if (!to) { showToast('Please select assignee!', 'error'); return; }
+1336-  if (!desc) { showToast('Please enter a description!', 'error'); return; }
+1337-  if (!date) { showToast('Please select a deadline!', 'error'); return; }
+1338-
+1339-  const tasks = getTasks();
+1340-  const newTask = {
+--
+1361-    subject: `📋 New Task Assigned: ${newTask.taskId}`,
+1362-    body: `Hi,\n\nA new task has been assigned to you by ${currentUser}.\n\nTask ID: ${newTask.taskId}\nDescription: ${desc}\nDeadline: ${fmt(newTask.deadline)}\nPriority: ${priority}\n\nPlease log in to Precitech Task Manager to view and update this task.\n\nRegards,\nPrecitech Task Manager`
+1363-  });
+1364-
+1365-  closeModal('assign-modal');
+1366:  document.getElementById('assign-to').value = '';
+1367-  document.getElementById('assign-desc').value = '';
+1368-  document.getElementById('assign-date').value = '';
+1369-  document.getElementById('assign-priority').value = 'Medium';
+1370-
+1371-  renderDashboard();
+1372-  showToast('Task assigned! Notification sent to assignee.', 'success');
+1373-}
+1374-{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "  // Populate assign-to dropdown\n  const asel = document.getElementById('assign-to');\n  TEAM_MEMBERS.forEach(m => {\n    const o = document.createElement('option'); o.value = m; o.innerText = m; asel.appendChild(o);\n  });", "new_string": "  // Populate assign-to dropdown\n  const asel = document.getElementById('assign-to');\n  if (asel) {\n    asel.innerHTML = '<option value=\"\">-- Select Member --</option>';\n    TEAM_MEMBERS.forEach(m => {\n      const o = document.createElement('option');\n      o.value = m.email; // Use email as unique identifier\n      o.innerText = m.name; // Display name only\n      asel.appendChild(o);\n    });\n  }"}
+Input
+{"pattern": "Assigned By Me|table-by", "path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "output_mode": "content", "-n": true, "-B": 10, "-A": 30}
+Result
+190-    <!-- Nav Links -->
+191-    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+192-      <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50 hover:text-orange-600">
+193-        <i class="fa-solid fa-gauge-high w-5 text-center"></i> Dashboard
+194-      </button>
+195-      <button onclick="showSection('my-tasks')" id="nav-my-tasks" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50 hover:text-orange-600">
+196-        <i class="fa-solid fa-list-check w-5 text-center"></i> My Tasks
+197-        <span id="nav-badge-my" class="ml-auto bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full hidden"></span>
+198-      </button>
+199-      <button onclick="showSection('assigned-by')" id="nav-assigned-by" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50 hover:text-orange-600">
+200:        <i class="fa-solid fa-paper-plane w-5 text-center"></i> Assigned By Me
+201-        <span id="nav-badge-by" class="ml-auto bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full hidden"></span>
+202-      </button>
+203-      <button onclick="showSection('admin')" id="nav-admin" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50 hover:text-orange-600 hidden" id="nav-admin">
+204-        <i class="fa-solid fa-user-shield w-5 text-center"></i> Admin Panel
+205-      </button>
+206-    </nav>
+207-
+208-    <!-- Logout -->
+209-    <div class="px-3 py-4 border-t border-gray-100">
+210-      <button onclick="doLogout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition">
+211-        <i class="fa-solid fa-sign-out-alt w-5 text-center"></i> Logout
+212-      </button>
+213-    </div>
+214-  </div>
+215-
+216-  <!-- Sidebar overlay for mobile -->
+217-  <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-40 z-30 hidden md:hidden" onclick="closeSidebar()"></div>
+218-
+219-  <!-- Main Panel -->
+220-  <div class="flex-1 flex flex-col overflow-hidden">
+221-
+222-    <!-- Top Bar -->
+223-    <header class="bg-white border-b border-gray-200 px-4 sm:px-6 h-16 flex items-center justify-between flex-shrink-0 shadow-sm">
+224-      <div class="flex items-center gap-3">
+225-        <button onclick="openSidebar()" class="md:hidden text-gray-500 hover:text-gray-700">
+226-          <i class="fa-solid fa-bars text-xl"></i>
+227-        </button>
+228-        <h2 id="page-title" class="font-bold text-gray-800 text-lg">Dashboard</h2>
+229-      </div>
+230-      <div class="flex items-center gap-3">
+--
+368-      <!-- ====== ASSIGNED BY ME SECTION ====== -->
+369-      <div id="section-assigned-by" class="section hidden">
+370-        <div class="flex justify-between items-center mb-4">
+371-          <div></div>
+372-          <button onclick="exportAssignedByMe()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
+373-            <i class="fa-solid fa-file-excel mr-1"></i> Export
+374-          </button>
+375-        </div>
+376-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden fade-in">
+377-          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+378:            <h3 class="font-bold" style="color:#630f0f">Tasks Assigned By Me</h3>
+379-            <span id="count-by" class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">0</span>
+380-          </div>
+381-          <div class="overflow-x-auto">
+382-            <table class="w-full text-sm">
+383-              <thead class="text-xs uppercase bg-gray-50 text-gray-500">
+384-                <tr>
+385-                  <th class="px-5 py-3 text-left">Assigned To</th>
+386-                  <th class="px-5 py-3 text-left">Date</th>
+387-                  <th class="px-5 py-3 text-left">Task</th>
+388-                  <th class="px-5 py-3 text-left">Priority</th>
+389-                  <th class="px-5 py-3 text-left">Deadline</th>
+390-                  <th class="px-5 py-3 text-left">Status</th>
+391-                </tr>
+392-              </thead>
+393:              <tbody id="table-by" class="divide-y divide-gray-50"></tbody>
+394-            </table>
+395-          </div>
+396-        </div>
+397-      </div>
+398-
+399-      <!-- ====== ADMIN SECTION ====== -->
+400-      <div id="section-admin" class="section hidden">
+401-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5 fade-in">
+402-          <div class="flex flex-wrap gap-3 items-end">
+403-            <div class="flex-1 min-w-[150px]">
+404-              <label class="block text-xs font-bold text-gray-500 mb-1">Filter by Member</label>
+405-              <select id="admin-filter-user" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+406-                <option value="">All Members</option>
+407-              </select>
+408-            </div>
+409-            <div class="flex-1 min-w-[130px]">
+410-              <label class="block text-xs font-bold text-gray-500 mb-1">Status</label>
+411-              <select id="admin-filter-status" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+412-                <option value="">All</option>
+413-                <option value="Pending">Pending</option>
+414-                <option value="In Progress">In Progress</option>
+415-                <option value="Completed">Completed</option>
+416-              </select>
+417-            </div>
+418-            <div class="flex gap-2">
+419-              <button onclick="renderAdminPanel()" class="bg-gray-800 text-white font-bold py-2 px-4 rounded-lg text-sm">
+420-                <i class="fa-solid fa-filter mr-1"></i> Filter
+421-              </button>
+422-              <button onclick="exportAllTasks()" class="bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+423-                <i class="fa-solid fa-file-excel mr-1"></i> Export All
+--
+897-//  NAVIGATION
+898-// ============================================================
+899-function showSection(name) {
+900-  document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+901-  document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bg-orange-50','text-orange-600','font-bold'); b.classList.add('text-gray-600'); });
+902-
+903-  document.getElementById('section-' + name).classList.remove('hidden');
+904-  const nb = document.getElementById('nav-' + name);
+905-  if (nb) { nb.classList.add('bg-orange-50','text-orange-600'); nb.classList.remove('text-gray-600'); }
+906-
+907:  const titles = { dashboard: 'Dashboard', 'my-tasks': 'My Tasks', 'assigned-by': 'Assigned By Me', admin: 'Admin Panel' };
+908-  document.getElementById('page-title').innerText = titles[name] || name;
+909-
+910-  closeSidebar();
+911-  allTasks = getTasks();
+912-
+913-  if (name === 'dashboard') renderDashboard();
+914-  else if (name === 'my-tasks') renderMyTasks(allTasks);
+915-  else if (name === 'assigned-by') renderAssignedByMe(allTasks);
+916-  else if (name === 'admin') renderAdminPanel();
+917-}
+918-
+919-function openSidebar() {
+920-  document.getElementById('sidebar').classList.add('open');
+921-  document.getElementById('sidebar-overlay').classList.remove('hidden');
+922-}
+923-function closeSidebar() {
+924-  document.getElementById('sidebar').classList.remove('open');
+925-  document.getElementById('sidebar-overlay').classList.add('hidden');
+926-}
+927-
+928-// ============================================================
+929-//  HELPERS
+930-// ============================================================
+931-function fmt(iso) {
+932-  if (!iso) return '-';
+933-  return new Date(iso).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+934-}
+935-
+936-function isToday(iso) {
+937-  if (!iso) return false;
+--
+1114-          </button>
+1115-        </td>
+1116-      </tr>`;
+1117-  }).join('');
+1118-}
+1119-
+1120-// ============================================================
+1121-//  ASSIGNED BY ME RENDER
+1122-// ============================================================
+1123-function renderAssignedByMe(tasks) {
+1124:  const tbody = document.getElementById('table-by');
+1125-  const mine = tasks.filter(t => t.assignedBy === currentUser && t.assignedTo !== currentUser)
+1126-    .sort((a,b) => new Date(b.date) - new Date(a.date));
+1127-
+1128-  document.getElementById('count-by').innerText = mine.length;
+1129-
+1130-  if (mine.length === 0) {
+1131-    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400"><i class="fa-solid fa-inbox text-4xl mb-2 block text-gray-300"></i>You haven't assigned any tasks yet.</td></tr>`;
+1132-    return;
+1133-  }
+1134-
+1135-  tbody.innerHTML = mine.map(t => {
+1136-    const overdue = isOverdue(t.deadline, t.status);
+1137-    const today = isToday(t.deadline);
+1138-    const rowCls = overdue ? 'overdue-row' : today && t.status !== 'Completed' ? 'due-today-row' : '';
+1139-    const commCount = getComments(t.taskId).length;
+1140-    const overdueDays = getOverdueDays(t.deadline, t.status);
+1141-
+1142-    return `
+1143-      <tr class="hover:bg-gray-50 transition ${rowCls}">
+1144-        <td class="px-5 py-3.5">
+1145-          <div class="flex items-center gap-2">
+1146-            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">
+1147-              ${t.assignedTo.charAt(0).toUpperCase()}
+1148-            </div>
+1149-            <div>
+1150-              <div class="font-bold text-indigo-700 text-sm">${getUserName(t.assignedTo).replace(/\./g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
+1151-              <div class="text-xs text-gray-400">${t.assignedTo}</div>
+1152-            </div>
+Input
+{"file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "offset": 300, "limit": 70}
+Result
+   300→
+   301→      <!-- ====== MY TASKS SECTION ====== -->
+   302→      <div id="section-my-tasks" class="section hidden">
+   303→        <!-- Filters -->
+   304→        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5 fade-in">
+   305→          <div class="flex flex-wrap gap-3 items-end">
+   306→            <div class="flex-1 min-w-[130px]">
+   307→              <label class="block text-xs font-bold text-gray-500 mb-1">From Date</label>
+   308→              <input type="date" id="filter-from" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+   309→            </div>
+   310→            <div class="flex-1 min-w-[130px]">
+   311→              <label class="block text-xs font-bold text-gray-500 mb-1">To Date</label>
+   312→              <input type="date" id="filter-to" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+   313→            </div>
+   314→            <div class="flex-1 min-w-[130px]">
+   315→              <label class="block text-xs font-bold text-gray-500 mb-1">Status</label>
+   316→              <select id="filter-status" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+   317→                <option value="">All Status</option>
+   318→                <option value="Pending">Pending</option>
+   319→                <option value="In Progress">In Progress</option>
+   320→                <option value="Completed">Completed</option>
+   321→              </select>
+   322→            </div>
+   323→            <div class="flex-1 min-w-[130px]">
+   324→              <label class="block text-xs font-bold text-gray-500 mb-1">Priority</label>
+   325→              <select id="filter-priority" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+   326→                <option value="">All Priority</option>
+   327→                <option value="High">High</option>
+   328→                <option value="Medium">Medium</option>
+   329→                <option value="Low">Low</option>
+   330→              </select>
+   331→            </div>
+   332→            <div class="flex gap-2">
+   333→              <button onclick="applyFilter()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
+   334→                <i class="fa-solid fa-filter mr-1"></i> Filter
+   335→              </button>
+   336→              <button onclick="clearFilter()" class="border border-gray-200 text-gray-500 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg text-sm transition">Clear</button>
+   337→              <button onclick="exportTasks()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
+   338→                <i class="fa-solid fa-file-excel mr-1"></i> Export
+   339→              </button>
+   340→            </div>
+   341→          </div>
+   342→        </div>
+   343→
+   344→        <!-- Tasks Table -->
+   345→        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden fade-in">
+   346→          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+   347→            <h3 class="font-bold" style="color:#630f0f">Tasks Assigned To Me</h3>
+   348→            <span id="count-to" class="bg-orange-100 text-orange-800 text-xs font-bold px-2.5 py-1 rounded-full">0</span>
+   349→          </div>
+   350→          <div class="overflow-x-auto">
+   351→            <table class="w-full text-sm">
+   352→              <thead class="text-xs uppercase bg-gray-50 text-gray-500">
+   353→                <tr>
+   354→                  <th class="px-5 py-3 text-left">Assigned By</th>
+   355→                  <th class="px-5 py-3 text-left">Task</th>
+   356→                  <th class="px-5 py-3 text-left">Priority</th>
+   357→                  <th class="px-5 py-3 text-left">Deadline</th>
+   358→                  <th class="px-5 py-3 text-left">Status</th>
+   359→                  <th class="px-5 py-3 text-left">Notes</th>
+   360→                </tr>
+   361→              </thead>
+   362→              <tbody id="table-to" class="divide-y divide-gray-50"></tbody>
+   363→            </table>
+   364→          </div>
+   365→        </div>
+   366→      </div>
+   367→
+   368→      <!-- ====== ASSIGNED BY ME SECTION ====== -->
+   369→      <div id="section-assigned-by" class="section hidden">
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions
+{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "      <!-- ====== ASSIGNED BY ME SECTION ====== -->\n      <div id=\"section-assigned-by\" class=\"section hidden\">\n        <div class=\"flex justify-between items-center mb-4\">\n          <div></div>\n          <button onclick=\"exportAssignedByMe()\" class=\"bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition\">\n            <i class=\"fa-solid fa-file-excel mr-1\"></i> Export\n          </button>\n        </div>\n        <div class=\"bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden fade-in\">\n          <div class=\"px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50\">\n            <h3 class=\"font-bold\" style=\"color:#630f0f\">Tasks Assigned By Me</h3>\n            <span id=\"count-by\" class=\"bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full\">0</span>\n          </div>\n          <div class=\"overflow-x-auto\">\n            <table class=\"w-full text-sm\">\n              <thead class=\"text-xs uppercase bg-gray-50 text-gray-500\">\n                <tr>\n                  <th class=\"px-5 py-3 text-left\">Assigned To</th>\n                  <th class=\"px-5 py-3 text-left\">Date</th>\n                  <th class=\"px-5 py-3 text-left\">Task</th>\n                  <th class=\"px-5 py-3 text-left\">Priority</th>\n                  <th class=\"px-5 py-3 text-left\">Deadline</th>\n                  <th class=\"px-5 py-3 text-left\">Status</th>\n                </tr>\n              </thead>\n              <tbody id=\"table-by\" class=\"divide-y divide-gray-50\"></tbody>\n            </table>\n          </div>\n        </div>\n      </div>", "new_string": "      <!-- ====== ASSIGNED BY ME SECTION ====== -->\n      <div id=\"section-assigned-by\" class=\"section hidden\">\n        <!-- Filters -->\n        <div class=\"bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5 fade-in\">\n          <div class=\"flex flex-wrap gap-3 items-end\">\n            <div class=\"flex-1 min-w-[130px]\">\n              <label class=\"block text-xs font-bold text-gray-500 mb-1\">From Date</label>\n              <input type=\"date\" id=\"filter-by-from\" class=\"w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none\">\n            </div>\n            <div class=\"flex-1 min-w-[130px]\">\n              <label class=\"block text-xs font-bold text-gray-500 mb-1\">To Date</label>\n              <input type=\"date\" id=\"filter-by-to\" class=\"w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none\">\n            </div>\n            <div class=\"flex-1 min-w-[130px]\">\n              <label class=\"block text-xs font-bold text-gray-500 mb-1\">Status</label>\n              <select id=\"filter-by-status\" class=\"w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none\">\n                <option value=\"\">All Status</option>\n                <option value=\"Pending\">Pending</option>\n                <option value=\"In Progress\">In Progress</option>\n                <option value=\"Completed\">Completed</option>\n              </select>\n            </div>\n            <div class=\"flex-1 min-w-[130px]\">\n              <label class=\"block text-xs font-bold text-gray-500 mb-1\">Priority</label>\n              <select id=\"filter-by-priority\" class=\"w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none\">\n                <option value=\"\">All Priority</option>\n                <option value=\"High\">High</option>\n                <option value=\"Medium\">Medium</option>\n                <option value=\"Low\">Low</option>\n              </select>\n            </div>\n            <div class=\"flex gap-2\">\n              <button onclick=\"applyFilterByMe()\" class=\"bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg text-sm transition\">\n                <i class=\"fa-solid fa-filter mr-1\"></i> Filter\n              </button>\n              <button onclick=\"clearFilterByMe()\" class=\"border border-gray-200 text-gray-500 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg text-sm transition\">Clear</button>\n              <button onclick=\"exportAssignedByMe()\" class=\"bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition\">\n                <i class=\"fa-solid fa-file-excel mr-1\"></i> Export\n              </button>\n            </div>\n          </div>\n        </div>\n\n        <!-- Tasks Table -->\n        <div class=\"bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden fade-in\">\n          <div class=\"px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50\">\n            <h3 class=\"font-bold\" style=\"color:#630f0f\">Tasks Assigned By Me</h3>\n            <span id=\"count-by\" class=\"bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full\">0</span>\n          </div>\n          <div class=\"overflow-x-auto\">\n            <table class=\"w-full text-sm\">\n              <thead class=\"text-xs uppercase bg-gray-50 text-gray-500\">\n                <tr>\n                  <th class=\"px-5 py-3 text-left\">Assigned To</th>\n                  <th class=\"px-5 py-3 text-left\">Task</th>\n                  <th class=\"px-5 py-3 text-left\">Priority</th>\n                  <th class=\"px-5 py-3 text-left\">Deadline</th>\n                  <th class=\"px-5 py-3 text-left\">Status</th>\n                  <th class=\"px-5 py-3 text-left\">Notes</th>\n                </tr>\n              </thead>\n              <tbody id=\"table-by\" class=\"divide-y divide-gray-50\"></tbody>\n            </table>\n          </div>\n        </div>\n      </div>"}
+Input
+{"file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "offset": 1135, "limit": 50}
+Result
+  1135→        </td>
+  1136→        <td class="px-5 py-3.5">
+  1137→          ${isDisabled
+  1138→            ? statusBadge('Completed')
+  1139→            : `<select onchange="handleStatusChange('${t.taskId}', this.value, this)"
+  1140→                class="bg-gray-50 border border-gray-200 text-gray-800 text-xs font-bold px-2 py-1.5 rounded-lg focus:ring-2 focus:ring-orange-400 outline-none cursor-pointer">
+  1141→                <option value="Pending" ${t.status==='Pending'?'selected':''}>Pending</option>
+  1142→                <option value="In Progress" ${t.status==='In Progress'?'selected':''}>In Progress</option>
+  1143→                <option value="Completed">Completed</option>
+  1144→              </select>`
+  1145→          }
+  1146→        </td>
+  1147→        <td class="px-5 py-3.5">
+  1148→          <button onclick="openComments('${t.taskId}')" class="text-blue-500 hover:text-blue-700 text-xs font-bold flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg transition">
+  1149→            <i class="fa-solid fa-comment"></i> ${commCount > 0 ? commCount : 'Add'} Note${commCount !== 1 ? 's' : ''}
+  1150→          </button>
+  1151→        </td>
+  1152→      </tr>`;
+  1153→  }).join('');
+  1154→}
+  1155→
+  1156→// ============================================================
+  1157→//  ASSIGNED BY ME RENDER
+  1158→// ============================================================
+  1159→function renderAssignedByMe(tasks) {
+  1160→  const tbody = document.getElementById('table-by');
+  1161→  const mine = tasks.filter(t => t.assignedBy === currentUser && t.assignedTo !== currentUser)
+  1162→    .sort((a,b) => new Date(b.date) - new Date(a.date));
+  1163→
+  1164→  document.getElementById('count-by').innerText = mine.length;
+  1165→
+  1166→  if (mine.length === 0) {
+  1167→    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400"><i class="fa-solid fa-inbox text-4xl mb-2 block text-gray-300"></i>You haven't assigned any tasks yet.</td></tr>`;
+  1168→    return;
+  1169→  }
+  1170→
+  1171→  tbody.innerHTML = mine.map(t => {
+  1172→    const overdue = isOverdue(t.deadline, t.status);
+  1173→    const today = isToday(t.deadline);
+  1174→    const rowCls = overdue ? 'overdue-row' : today && t.status !== 'Completed' ? 'due-today-row' : '';
+  1175→    const commCount = getComments(t.taskId).length;
+  1176→    const overdueDays = getOverdueDays(t.deadline, t.status);
+  1177→
+  1178→    return `
+  1179→      <tr class="hover:bg-gray-50 transition ${rowCls}">
+  1180→        <td class="px-5 py-3.5">
+  1181→          <div class="flex items-center gap-2">
+  1182→            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">
+  1183→              ${t.assignedTo.charAt(0).toUpperCase()}
+  1184→            </div>
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions 
+Input
+{"file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "offset": 1178, "limit": 50}
+Result
+  1178→    return `
+  1179→      <tr class="hover:bg-gray-50 transition ${rowCls}">
+  1180→        <td class="px-5 py-3.5">
+  1181→          <div class="flex items-center gap-2">
+  1182→            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">
+  1183→              ${t.assignedTo.charAt(0).toUpperCase()}
+  1184→            </div>
+  1185→            <div>
+  1186→              <div class="font-bold text-indigo-700 text-sm">${getUserName(t.assignedTo).replace(/\./g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
+  1187→              <div class="text-xs text-gray-400">${t.assignedTo}</div>
+  1188→            </div>
+  1189→          </div>
+  1190→        </td>
+  1191→        <td class="px-5 py-3.5">
+  1192→          <div class="font-medium text-gray-800 max-w-xs">${t.description}</div>
+  1193→          <div class="font-mono text-xs text-gray-400 mt-0.5">${t.taskId}</div>
+  1194→          ${t.completionNote ? `<div class="text-xs text-emerald-600 italic">"${t.completionNote}"</div>` : ''}
+  1195→          ${t.attachment ? `<div class="text-xs text-blue-600"><i class="fa-solid fa-paperclip mr-1"></i>${t.attachment}</div>` : ''}
+  1196→        </td>
+  1197→        <td class="px-5 py-3.5">${priorityBadge(t.priority||'Medium')}</td>
+  1198→        <td class="px-5 py-3.5 whitespace-nowrap">
+  1199→          <span class="${overdue?'text-red-600 font-bold':today&&t.status!=='Completed'?'text-orange-600 font-bold':'text-gray-700'}">${fmt(t.deadline)}</span>
+  1200→          ${overdue?`<span class="text-xs text-red-600 font-bold block"><i class="fa-solid fa-clock"></i> Overdue by ${overdueDays} day${overdueDays !== 1 ? 's' : ''}</span>`:''}
+  1201→          ${!overdue&&today&&t.status!=='Completed'?'<span class="text-xs text-orange-600 font-bold block"><i class="fa-solid fa-fire"></i> Due Today</span>':''}
+  1202→        </td>
+  1203→        <td class="px-5 py-3.5">
+  1204→          <div class="flex items-center gap-2">
+  1205→            ${statusBadge(t.status)}
+  1206→            <button onclick="openComments('${t.taskId}')" class="text-blue-500 hover:text-blue-700 text-xs bg-blue-50 px-2 py-1 rounded-lg transition">
+  1207→              <i class="fa-solid fa-comment"></i> ${commCount||''}
+  1208→            </button>
+  1209→          </div>
+  1210→        </td>
+  1211→      </tr>`;
+  1212→  }).join('');
+  1213→}
+  1214→
+  1215→// ============================================================
+  1216→//  ADMIN PANEL
+  1217→// ============================================================
+  1218→function renderAdminPanel() {
+  1219→  const tasks = getTasks();
+  1220→  const uFilter = document.getElementById('admin-filter-user').value;
+  1221→  const sFilter = document.getElementById('admin-filter-status').value;
+  1222→
+  1223→  let filtered = tasks;
+  1224→  if (uFilter) filtered = filtered.filter(t => t.assignedTo === uFilter || t.assignedBy === uFilter);
+  1225→  if (sFilter) filtered = filtered.filter(t => t.status === sFilter);
+  1226→
+  1227→  filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "  if (mine.length === 0) {\n    tbody.innerHTML = `<tr><td colspan=\"5\" class=\"px-6 py-12 text-center text-gray-400\"><i class=\"fa-solid fa-inbox text-4xl mb-2 block text-gray-300\"></i>You haven't assigned any tasks yet.</td></tr>`;\n    return;\n  }\n\n  tbody.innerHTML = mine.map(t => {\n    const overdue = isOverdue(t.deadline, t.status);\n    const today = isToday(t.deadline);\n    const rowCls = overdue ? 'overdue-row' : today && t.status !== 'Completed' ? 'due-today-row' : '';\n    const commCount = getComments(t.taskId).length;\n    const overdueDays = getOverdueDays(t.deadline, t.status);\n\n    return `\n      <tr class=\"hover:bg-gray-50 transition ${rowCls}\">\n        <td class=\"px-5 py-3.5\">\n          <div class=\"flex items-center gap-2\">\n            <div class=\"w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0\" style=\"background:linear-gradient(135deg,#1e40af,#3b82f6)\">\n              ${t.assignedTo.charAt(0).toUpperCase()}\n            </div>\n            <div>\n              <div class=\"font-bold text-indigo-700 text-sm\">${getUserName(t.assignedTo).replace(/\\./g,' ').replace(/\\b\\w/g,c=>c.toUpperCase())}</div>\n              <div class=\"text-xs text-gray-400\">${t.assignedTo}</div>\n            </div>\n          </div>\n        </td>\n        <td class=\"px-5 py-3.5\">\n          <div class=\"font-medium text-gray-800 max-w-xs\">${t.description}</div>\n          <div class=\"font-mono text-xs text-gray-400 mt-0.5\">${t.taskId}</div>\n          ${t.completionNote ? `<div class=\"text-xs text-emerald-600 italic\">\"${t.completionNote}\"</div>` : ''}\n          ${t.attachment ? `<div class=\"text-xs text-blue-600\"><i class=\"fa-solid fa-paperclip mr-1\"></i>${t.attachment}</div>` : ''}\n        </td>\n        <td class=\"px-5 py-3.5\">${priorityBadge(t.priority||'Medium')}</td>\n        <td class=\"px-5 py-3.5 whitespace-nowrap\">\n          <span class=\"${overdue?'text-red-600 font-bold':today&&t.status!=='Completed'?'text-orange-600 font-bold':'text-gray-700'}\">${fmt(t.deadline)}</span>\n          ${overdue?`<span class=\"text-xs text-red-600 font-bold block\"><i class=\"fa-solid fa-clock\"></i> Overdue by ${overdueDays} day${overdueDays !== 1 ? 's' : ''}</span>`:''}\n          ${!overdue&&today&&t.status!=='Completed'?'<span class=\"text-xs text-orange-600 font-bold block\"><i class=\"fa-solid fa-fire\"></i> Due Today</span>':''}\n        </td>\n        <td class=\"px-5 py-3.5\">\n          <div class=\"flex items-center gap-2\">\n            ${statusBadge(t.status)}\n            <button onclick=\"openComments('${t.taskId}')\" class=\"text-blue-500 hover:text-blue-700 text-xs bg-blue-50 px-2 py-1 rounded-lg transition\">\n              <i class=\"fa-solid fa-comment\"></i> ${commCount||''}\n            </button>\n          </div>\n        </td>\n      </tr>`;\n  }).join('');\n}", "new_string": "  if (mine.length === 0) {\n    tbody.innerHTML = `<tr><td colspan=\"6\" class=\"px-6 py-12 text-center text-gray-400\"><i class=\"fa-solid fa-inbox text-4xl mb-2 block text-gray-300\"></i>You haven't assigned any tasks yet.</td></tr>`;\n    return;\n  }\n\n  tbody.innerHTML = mine.map(t => {\n    const overdue = isOverdue(t.deadline, t.status);\n    const today = isToday(t.deadline);\n    const rowCls = overdue ? 'overdue-row' : today && t.status !== 'Completed' ? 'due-today-row' : '';\n    const commCount = getComments(t.taskId).length;\n    const overdueDays = getOverdueDays(t.deadline, t.status);\n\n    return `\n      <tr class=\"hover:bg-gray-50 transition ${rowCls}\">\n        <td class=\"px-5 py-3.5\">\n          <div class=\"flex items-center gap-2\">\n            <div class=\"w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0\" style=\"background:linear-gradient(135deg,#1e40af,#3b82f6)\">\n              ${t.assignedTo.charAt(0).toUpperCase()}\n            </div>\n            <div>\n              <div class=\"font-bold text-indigo-700 text-sm\">${getUserName(t.assignedTo).replace(/\\./g,' ').replace(/\\b\\w/g,c=>c.toUpperCase())}</div>\n              <div class=\"text-xs text-gray-400\">${t.assignedTo}</div>\n            </div>\n          </div>\n        </td>\n        <td class=\"px-5 py-3.5\">\n          <div class=\"font-medium text-gray-800 max-w-xs\">${t.description}</div>\n          <div class=\"font-mono text-xs text-gray-400 mt-0.5\">${t.taskId}</div>\n          ${t.completionNote ? `<div class=\"text-xs text-emerald-600 mt-0.5 italic\">\"${t.completionNote}\"</div>` : ''}\n          ${t.attachment ? `<div class=\"text-xs text-blue-600 mt-0.5\"><i class=\"fa-solid fa-paperclip mr-1\"></i>${t.attachment}</div>` : ''}\n        </td>\n        <td class=\"px-5 py-3.5\">${priorityBadge(t.priority||'Medium')}</td>\n        <td class=\"px-5 py-3.5 whitespace-nowrap\">\n          <span class=\"${overdue?'text-red-600 font-bold':today&&t.status!=='Completed'?'text-orange-600 font-bold':'text-gray-700'}\">${fmt(t.deadline)}</span>\n          ${overdue?`<span class=\"text-xs text-red-600 font-bold block\"><i class=\"fa-solid fa-clock\"></i> Overdue by ${overdueDays} day${overdueDays !== 1 ? 's' : ''}</span>`:''}\n          ${!overdue&&today&&t.status!=='Completed'?'<span class=\"text-xs text-orange-600 font-bold block\"><i class=\"fa-solid fa-fire\"></i> Due Today</span>':''}\n        </td>\n        <td class=\"px-5 py-3.5\">${statusBadge(t.status)}</td>\n        <td class=\"px-5 py-3.5\">\n          <button onclick=\"openComments('${t.taskId}')\" class=\"text-blue-500 hover:text-blue-700 text-xs font-bold flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg transition\">\n            <i class=\"fa-solid fa-comment\"></i> ${commCount > 0 ? commCount : 'Add'} Note${commCount !== 1 ? 's' : ''}\n          </button>\n        </td>\n      </tr>`;\n  }).join('');\n}"}
+Input
+{"pattern": "function applyFilter|function clearFilter", "path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "output_mode": "content", "-n": true, "-A": 20}
+Result
+1586:function applyFilter() {
+1587-  const from = document.getElementById('filter-from').value;
+1588-  const to = document.getElementById('filter-to').value;
+1589-  const status = document.getElementById('filter-status').value;
+1590-  const priority = document.getElementById('filter-priority').value;
+1591-
+1592-  let filtered = getTasks();
+1593-  if (from) filtered = filtered.filter(t => new Date(t.date) >= new Date(from));
+1594-  if (to) { const td = new Date(to); td.setHours(23,59,59,999); filtered = filtered.filter(t => new Date(t.date) <= td); }
+1595-  if (status) filtered = filtered.filter(t => t.status === status);
+1596-  if (priority) filtered = filtered.filter(t => t.priority === priority);
+1597-
+1598-  filterActive = true;
+1599-  renderMyTasks(filtered);
+1600-}
+1601-
+1602:function clearFilter() {
+1603-  document.getElementById('filter-from').value = '';
+1604-  document.getElementById('filter-to').value = '';
+1605-  document.getElementById('filter-status').value = '';
+1606-  document.getElementById('filter-priority').value = '';
+1607-  filterActive = false;
+1608-  allTasks = getTasks();
+1609-  renderMyTasks(allTasks);
+1610-}
+1611-
+1612-// ============================================================
+1613-//  EXPORT
+1614-// ============================================================
+1615-function exportTasks() {
+1616-  const mine = allTasks.filter(t => t.assignedTo === currentUser);
+1617-  exportToExcel(mine, 'My_Tasks');
+1618-}
+1619-
+1620-function exportAssignedByMe() {
+1621-  const byMe = allTasks.filter(t => t.assignedBy === currentUser
+{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "function clearFilter() {\n  document.getElementById('filter-from').value = '';\n  document.getElementById('filter-to').value = '';\n  document.getElementById('filter-status').value = '';\n  document.getElementById('filter-priority').value = '';\n  filterActive = false;\n  allTasks = getTasks();\n  renderMyTasks(allTasks);\n}\n\n// ============================================================\n//  EXPORT\n// ============================================================", "new_string": "function clearFilter() {\n  document.getElementById('filter-from').value = '';\n  document.getElementById('filter-to').value = '';\n  document.getElementById('filter-status').value = '';\n  document.getElementById('filter-priority').value = '';\n  filterActive = false;\n  allTasks = getTasks();\n  renderMyTasks(allTasks);\n}\n\nfunction applyFilterByMe() {\n  const from = document.getElementById('filter-by-from').value;\n  const to = document.getElementById('filter-by-to').value;\n  const status = document.getElementById('filter-by-status').value;\n  const priority = document.getElementById('filter-by-priority').value;\n\n  let filtered = getTasks();\n  if (from) filtered = filtered.filter(t => new Date(t.date) >= new Date(from));\n  if (to) { const td = new Date(to); td.setHours(23,59,59,999); filtered = filtered.filter(t => new Date(t.date) <= td); }\n  if (status) filtered = filtered.filter(t => t.status === status);\n  if (priority) filtered = filtered.filter(t => t.priority === priority);\n\n  renderAssignedByMe(filtered);\n}\n\nfunction clearFilterByMe() {\n  document.getElementById('filter-by-from').value = '';\n  document.getElementById('filter-by-to').value = '';\n  document.getElementById('filter-by-status').value = '';\n  document.getElementById('filter-by-priority').value = '';\n  allTasks = getTasks();\n  renderAssignedByMe(allTasks);\n}\n\n// ============================================================\n//  EXPORT\n// ============================================================"}
+{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "const TEAM_MEMBERS = [\n  {name: 'Vaibhav Wadhwa', email: 'production.precitech1981@gmail.com'},\n  {name: 'Devanshu Arora', email: 'devanshu.precitech1981@gmail.com'},\n  {name: 'Kanhaiya Pandey', email: 'tech.precitech1981@gmail.com'},\n  {name: 'Shilpa Das', email: 'hr.precitech1981@gmail.com'},", "new_string": "const TEAM_MEMBERS = [\n  {name: 'Vaibhav Wadhwa', email: 'production.precitech1981@gmail.com', role: 'user'},\n  {name: 'Devanshu Arora', email: 'devanshu.precitech1981@gmail.com', role: 'user'},\n  {name: 'Kanhaiya Pandey', email: 'tech.precitech1981@gmail.com', role: 'admin'},\n  {name: 'Shilpa Das', email: 'hr.precitech1981@gmail.com', role: 'user'},"}
+{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "  {name: 'Raushan Kumar', email: 'raushan.precitech1981@gmail.com'},\n  {name: 'Deepak Singh', email: 'supply.precitech1981@gmail.com'},\n  {name: 'Raghvendra Shakya', email: 'raghvendra.precitech1981@gmail.com'},\n  {name: 'Manish Kumar', email: 'manish.precitech1981@gmail.com'},\n  {name: 'Bhakti Ram', email: 'bhakti.precitech1981@gmail.com'},\n  {name: 'Garv Sachdeva', email: 'garv.sachdeva1981@gmail.com'},\n  {name: 'Vikash Kumar', email: 'vikash.precitech1981@gmail.com'},\n  {name: 'Chandan Kumar', email: 'chandan.precitech1981@gmail.com'},\n  {name: 'Sobran Singh', email: 'sobranprecitech1981@gmail.com'},\n  {name: 'Arvind Kumar Yadav', email: 'arvind.precitech1981@gmail.com'},\n  {name: 'Amit Singh', email: 'amit.precitech1981@gmail.com'},\n  {name: 'Pramod Kumar', email: 'pramod.precitech1981@gmail.com'},\n  {name: 'Dharmendra Singh', email: 'dharmendra.precitech1981@gmail.com'},\n  {name: 'Binod Kumar', email: 'binod.precitech1981@gmail.com'},\n  {name: 'Vinay Sharma', email: 'vinay.precitech1981@gmail.com'},\n  {name: 'Vaibhav Wadhwa', email: 'production@precitech1981.com'},\n  {name: 'Deepak Singh', email: 'supplychain@precitech1981.com'},\n  {name: 'Raushan Kumar', email: 'accounts@precitech1981.com'},\n  {name: 'Chandan Kumar', email: 'quality@precitech1981.com'},\n  {name: 'Devanshu Arora', email: 'devanshuarora@precitech1981.com'}\n];", "new_string": "  {name: 'Raushan Kumar', email: 'raushan.precitech1981@gmail.com', role: 'user'},\n  {name: 'Deepak Singh', email: 'supply.precitech1981@gmail.com', role: 'user'},\n  {name: 'Raghvendra Shakya', email: 'raghvendra.precitech1981@gmail.com', role: 'user'},\n  {name: 'Manish Kumar', email: 'manish.precitech1981@gmail.com', role: 'user'},\n  {name: 'Bhakti Ram', email: 'bhakti.precitech1981@gmail.com', role: 'user'},\n  {name: 'Garv Sachdeva', email: 'garv.precitech1981@gmail.com', role: 'user'},\n  {name: 'Vikash Kumar', email: 'vikash.precitech1981@gmail.com', role: 'user'},\n  {name: 'Chandan Kumar', email: 'chandan.precitech1981@gmail.com', role: 'user'},\n  {name: 'Sobran Singh', email: 'sobranprecitech1981@gmail.com', role: 'user'},\n  {name: 'Arvind Kumar Yadav', email: 'arvind.precitech1981@gmail.com', role: 'user'},\n  {name: 'Amit Singh', email: 'amit.precitech1981@gmail.com', role: 'user'},\n  {name: 'Pramod Kumar', email: 'pramod.precitech1981@gmail.com', role: 'user'},\n  {name: 'Dharmendra Singh', email: 'dharmendra.precitech1981@gmail.com', role: 'user'},\n  {name: 'Binod Kumar', email: 'binod.precitech1981@gmail.com', role: 'user'},\n  {name: 'Vinay Sharma', email: 'vinay.precitech1981@gmail.com', role: 'user'},\n  {name: 'Vaibhav Wadhwa', email: 'production@precitech1981.com', role: 'user'},\n  {name: 'Deepak Singh', email: 'supplychain@precitech1981.com', role: 'user'},\n  {name: 'Raushan Kumar', email: 'accounts@precitech1981.com', role: 'user'},\n  {name: 'Chandan Kumar', email: 'quality@precitech1981.com', role: 'user'},\n  {name: 'Devanshu Arora', email: 'devanshuarora@precitech1981.com', role: 'user'}\n];"}
+Input
+{"file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "offset": 605, "limit": 25}
+Result
+   605→    </div>
+   606→    <div class="p-4 border-b border-gray-100 flex-shrink-0">
+   607→      <div id="comment-task-info" class="bg-blue-50 rounded-xl p-3 text-sm text-blue-800 font-medium"></div>
+   608→    </div>
+   609→    <div id="comments-list" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+   610→    <div class="p-4 border-t border-gray-100 flex-shrink-0">
+   611→      <div class="flex gap-2">
+   612→        <textarea id="new-comment" rows="2" placeholder="Write a comment or note..."
+   613→          class="flex-1 bg-gray-50 border border-gray-200 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-blue-400 outline-none resize-none"></textarea>
+   614→        <button onclick="addComment()" class="px-4 py-2 text-white rounded-xl font-bold text-sm hover:opacity-90 transition self-end" style="background:#3b82f6">
+   615→          <i class="fa-solid fa-paper-plane"></i>
+   616→        </button>
+   617→      </div>
+   618→    </div>
+   619→  </div>
+   620→</div>
+   621→
+   622→<!-- ==================== TOAST ==================== -->
+   623→<div id="toast" class="fixed bottom-6 right-6 z-[100] transition-all duration-300 translate-y-20 opacity-0">
+   624→  <div id="toast-content" class="px-5 py-3.5 rounded-xl shadow-xl text-white font-bold flex items-center gap-3 min-w-[260px]">
+   625→    <i id="toast-icon" class="fa-solid fa-check-circle text-lg flex-shrink-0"></i>
+   626→    <span id="toast-message">Message</span>
+   627→  </div>
+   628→</div>
+   629→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions
+{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "    TEAM_MEMBERS.forEach(member => {\n      // Convert email to Firebase key: replace dots with underscores\n      const emailKey = member.email.toLowerCase().replace(/\\./g, '_').replace(/@/g, '_at_');\n\n      if (!existingUsers[emailKey]) {\n        existingUsers[emailKey] = {\n          email: member.email,\n          name: member.name,\n          password: 'Precitech@1981'\n        };\n        needsUpdate = true;\n        console.log('➕ Adding user:', member.name, '(' + emailKey + ')');\n      }\n    });", "new_string": "    TEAM_MEMBERS.forEach(member => {\n      // Convert email to Firebase key: replace dots with underscores\n      const emailKey = member.email.toLowerCase().replace(/\\./g, '_').replace(/@/g, '_at_');\n\n      if (!existingUsers[emailKey]) {\n        existingUsers[emailKey] = {\n          email: member.email,\n          name: member.name,\n          password: 'Precitech@1981',\n          role: member.role || 'user'\n        };\n        needsUpdate = true;\n        console.log('➕ Adding user:', member.name, '(' + emailKey + ') - Role:', member.role || 'user');\n      } else if (!existingUsers[emailKey].role) {\n        // Update existing users without role\n        existingUsers[emailKey].role = member.role || 'user';\n        needsUpdate = true;\n        console.log('🔄 Updating role for:', member.name);\n      }\n    });"}
+Input
+{"pattern": "<!-- ====== ADMIN SECTION ======", "path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "output_mode": "content", "-n": true, "-B": 5, "-A": 50}
+Result
+430-            </table>
+431-          </div>
+432-        </div>
+433-      </div>
+434-
+435:      <!-- ====== ADMIN SECTION ====== -->
+436-      <div id="section-admin" class="section hidden">
+437-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5 fade-in">
+438-          <div class="flex flex-wrap gap-3 items-end">
+439-            <div class="flex-1 min-w-[150px]">
+440-              <label class="block text-xs font-bold text-gray-500 mb-1">Filter by Member</label>
+441-              <select id="admin-filter-user" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+442-                <option value="">All Members</option>
+443-              </select>
+444-            </div>
+445-            <div class="flex-1 min-w-[130px]">
+446-              <label class="block text-xs font-bold text-gray-500 mb-1">Status</label>
+447-              <select id="admin-filter-status" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+448-                <option value="">All</option>
+449-                <option value="Pending">Pending</option>
+450-                <option value="In Progress">In Progress</option>
+451-                <option value="Completed">Completed</option>
+452-              </select>
+453-            </div>
+454-            <div class="flex gap-2">
+455-              <button onclick="renderAdminPanel()" class="bg-gray-800 text-white font-bold py-2 px-4 rounded-lg text-sm">
+456-                <i class="fa-solid fa-filter mr-1"></i> Filter
+457-              </button>
+458-              <button onclick="exportAllTasks()" class="bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+459-                <i class="fa-solid fa-file-excel mr-1"></i> Export All
+460-              </button>
+461-            </div>
+462-          </div>
+463-        </div>
+464-
+465-        <!-- Admin Stats -->
+466-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+467-          <div class="glass-card p-4 rounded-2xl shadow-sm border-l-4 border-blue-500">
+468-            <p class="text-xs font-bold text-gray-400 uppercase">Total Tasks</p>
+469-            <h3 id="admin-stat-total" class="text-2xl font-bold text-gray-800 mt-1">0</h3>
+470-          </div>
+471-          <div class="glass-card p-4 rounded-2xl shadow-sm border-l-4 border-amber-400">
+472-            <p class="text-xs font-bold text-gray-400 uppercase">Pending</p>
+473-            <h3 id="admin-stat-pending" class="text-2xl font-bold text-amber-500 mt-1">0</h3>
+474-          </div>
+475-          <div class="glass-card p-4 rounded-2xl shadow-sm border-l-4 border-indigo-500">
+476-            <p class="text-xs font-bold text-gray-400 uppercase">In Progress</p>
+477-            <h3 id="admin-stat-progress" class="text-2xl font-bold text-indigo-600 mt-1">0</h3>
+478-          </div>
+479-          <div class="glass-card p-4 rounded-2xl shadow-sm border-l-4 border-emerald-500">
+480-            <p class="text-xs font-bold text-gray-400 uppercase">Completed</p>
+481-            <h3 id="admin-stat-completed" class="text-2xl font-bold text-emerald-500 mt-1">0</h3>
+482-          </div>
+483-        </div>
+484-
+Input
+{"pattern": "complete-modal|<!-- Task Completed", "path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "output_mode": "content", "-n": true, "-B": 2, "-A": 40}
+Result
+564-
+565-<!-- ==================== TASK COMPLETE POPUP ==================== -->
+566:<div id="complete-modal" class="modal-overlay fixed inset-0 bg-gray-900 bg-opacity-60 items-center justify-center z-[70] p-4">
+567-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md slide-in">
+568-    <div class="px-6 py-4 flex justify-between items-center rounded-t-2xl" style="background:linear-gradient(135deg,#166534,#16a34a)">
+569-      <h3 class="text-white font-bold"><i class="fa-solid fa-circle-check mr-2"></i>Mark as Completed</h3>
+570-      <button onclick="cancelComplete()" class="text-white hover:text-green-200"><i class="fa-solid fa-times text-xl"></i></button>
+571-    </div>
+572-    <div class="p-6 space-y-4">
+573-      <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-800">
+574-        <i class="fa-solid fa-info-circle mr-2"></i>You are marking this task as <strong>Completed</strong>. Would you like to attach a document as proof?
+575-      </div>
+576-      <div>
+577-        <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Attach Document (Optional)</label>
+578-        <input type="file" id="complete-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+579-          class="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl p-2 focus:ring-2 focus:ring-green-400 outline-none">
+580-        <p class="text-xs text-gray-400 mt-1">Supported: PDF, DOC, DOCX, JPG, PNG, XLS, XLSX (max 5MB)</p>
+581-      </div>
+582-      <div>
+583-        <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Completion Note (Optional)</label>
+584-        <textarea id="complete-note" rows="2" placeholder="Add a note about this task completion..."
+585-          class="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-green-400 outline-none resize-none"></textarea>
+586-      </div>
+587-      <div class="flex gap-3">
+588-        <button onclick="cancelComplete()" class="flex-1 border border-gray-200 text-gray-600 font-bold py-2.5 rounded-xl hover:bg-gray-50 transition text-sm">
+589-          Cancel
+590-        </button>
+591-        <button onclick="confirmComplete()" class="flex-1 text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition text-sm" style="background:linear-gradient(135deg,#16a34a,#15803d)">
+592-          <i class="fa-solid fa-check mr-2"></i>Mark Complete
+593-        </button>
+594-      </div>
+595-    </div>
+596-  </div>
+597-</div>
+598-
+599-<!-- ==================== COMMENTS MODAL ==================== -->
+600-<div id="comments-modal" class="modal-overlay fixed inset-0 bg-gray-900 bg-opacity-60 items-center justify-center z-[70] p-4">
+601-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg slide-in max-h-[85vh] flex flex-col">
+602-    <div class="px-6 py-4 flex justify-between items-center rounded-t-2xl flex-shrink-0" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">
+603-      <h3 class="text-white font-bold"><i class="fa-solid fa-comments mr-2"></i>Comments & Notes</h3>
+604-      <button onclick="closeModal('comments-modal')" class="text-white hover:text-blue-200"><i class="fa-solid fa-times text-xl"></i></button>
+605-    </div>
+606-    <div class="p-4 border-b border-gray-100 flex-shrink-0">
+--
+1283-  if (newStatus === 'Completed') {
+1284-    pendingCompleteTaskId = taskId;
+1285:    openModal('complete-modal');
+1286-    document.getElementById('complete-file').value = '';
+1287-    document.getElementById('complete-note').value = '';
+1288-    // Revert select visually (will update after confirm)
+1289-    const tasks = getTasks();
+1290-    const t = tasks.find(x => x.taskId === taskId);
+1291-    if (t) selectEl.value = t.status;
+1292-  } else {
+1293-    doUpdateStatus(taskId, newStatus, '', '', null);
+1294-  }
+1295-}
+1296-
+1297-function confirmComplete() {
+1298-  const fileInput = document.getElementById('complete-file');
+1299-  const note = document.getElementById('complete-note').value.trim();
+1300-  const file = fileInput.files[0];
+1301-
+1302-  if (file && file.size > 5 * 1024 * 1024) { showToast('File too large! Max 5MB.', 'error'); return; }
+1303-
+1304-  const attachName = file ? file.name : '';
+1305-  doUpdateStatus(pendingCompleteTaskId, 'Completed', note, attachName, file);
+1306-
+1307-  
+1308-  // Send email to task creator
+1309-  const task = allTasks.find(t => t.taskId === pendingCompleteTaskId);
+1310-  if (task) {
+1311-    simulateSendEmail({
+1312-      to: task.assignedBy,
+1313-      subject: `✅ Task Completed: ${task.taskId}`,
+1314-      body: `Hi ${getUserName(task.assignedBy)},\n\n${getUserName(currentUser)} has marked the following task as COMPLETED:\n\nTask ID: ${task.taskId}\nDescription: ${task.description}\nCompleted by: ${getUserName(currentUser)}\n${note ? 'Note: ' + note : ''}\n${attachName ? 'Attachment: ' + attachName : ''}\n\nRegards,\nPrecitech Task Manager`
+1315-    });
+1316-  }
+1317:    closeModal('complete-modal');
+1318-  pendingCompleteTaskId = null;
+1319-}
+1320-
+1321-function cancelComplete() {
+1322-
+1323-  
+1324-  // Send email to task creator
+1325-  const task = allTasks.find(t => t.taskId === pendingCompleteTaskId);
+1326-  if (task) {
+1327-    simulateSendEmail({
+1328-      to: task.assignedBy,
+1329-      subject: `✅ Task Completed: ${task.taskId}`,
+1330-      body: `Hi ${getUserName(task.assignedBy)},\n\n${getUserName(currentUser)} has marked the following task as COMPLETED:\n\nTask ID: ${task.taskId}\nDescription: ${task.description}\nCompleted by: ${getUserName(currentUser)}\n${note ? 'Note: ' + note : ''}\n${attachName ? 'Attachment: ' + attachName : ''}\n\nRegards,\nPrecitech Task Manager`
+1331-    });
+1332-  }
+1333:    closeModal('complete-modal');
+1334-  pendingCompleteTaskId = null;
+1335-  // Refresh to restore select value
+1336-  allTasks = getTasks();
+1337-  renderMyTasks(allTasks);
+1338-}
+1339-
+1340-function doUpdateStatus(taskId, newStatus, note, attachName, file) {
+1341-  const tasks = getTasks();
+1342-  const idx = tasks.findIndex(t => t.taskId === taskId);
+1343-  if (idx === -1) return;
+1344-
+1345-  const task = tasks[idx];
+1346-  if (task.assignedTo !== currentUser) { showToast('You can only update your own tasks!', 'error'); return; }
+1347-  if (task.status === 'Completed') { showToast('Task already Completed!', 'error'); return; }
+1348-
+1349-  tasks[idx].status = newStatus;
+1350-  tasks[idx].completionNote = note;
+1351-  tasks[idx].attachment = attachName;
+1352-
+1353-  if (newStatus === 'Completed') {
+1354-    tasks[idx].completedDate = new Date().toISOString();
+1355-    // Simulate sending completion email to assigner
+1356-    simulateSendEmail({
+1357-      to: task.assignedBy,
+1358-      subject: `✅ Task Completed: ${taskId}`,
+1359-      body: `Hi,\n\n"${task.description}" has been marked as Completed by ${currentUser}.\n\nTask ID: ${taskId}\nCompleted: ${new Date().toLocaleString()}\nNote: ${note || 'N/A'}\nAttachment: ${attachName || 'None'}\n\nRegards,\nPrecitech Task Manager`
+1360-    });
+1361-  } else {
+1362-    tasks[idx].completedDate = '';
+1363-  }
+1364-
+1365-  saveTasks(tasks);
+1366-  allTasks = tasks;
+1367-  renderMyTasks(allTasks);
+1368-  renderDashboard();
+1369-  showToast(newStatus === 'Completed' ? '✅ Task marked Complete! Notification sent.' : `Status updated to "${newStatus}"`, 'success');
+1370-}
+1371-
+{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "function cancelComplete() {\n\n  \n  // Send email to task creator\n  const task = allTasks.find(t => t.taskId === pendingCompleteTaskId);\n  if (task) {\n    simulateSendEmail({\n      to: task.assignedBy,\n      subject: `✅ Task Completed: ${task.taskId}`,\n      body: `Hi ${getUserName(task.assignedBy)},\\n\\n${getUserName(currentUser)} has marked the following task as COMPLETED:\\n\\nTask ID: ${task.taskId}\\nDescription: ${task.description}\\nCompleted by: ${getUserName(currentUser)}\\n${note ? 'Note: ' + note : ''}\\n${attachName ? 'Attachment: ' + attachName : ''}\\n\\nRegards,\\nPrecitech Task Manager`\n    });\n  }\n    closeModal('complete-modal');\n  pendingCompleteTaskId = null;\n  // Refresh to restore select value\n  allTasks = getTasks();\n  renderMyTasks(allTasks);\n}", "new_string": "function cancelComplete() {\n  // Just close the modal without marking as complete or sending email\n  closeModal('complete-modal');\n  pendingCompleteTaskId = null;\n  // Refresh to restore select value\n  allTasks = getTasks();\n  renderMyTasks(allTasks);\n}"}
+{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "<!-- ==================== TOAST ==================== -->\n<div id=\"toast\" class=\"fixed bottom-6 right-6 z-[100] transition-all duration-300 translate-y-20 opacity-0\">\n  <div id=\"toast-content\" class=\"px-5 py-3.5 rounded-xl shadow-xl text-white font-bold flex items-center gap-3 min-w-[260px]\">\n    <i id=\"toast-icon\" class=\"fa-solid fa-check-circle text-lg flex-shrink-0\"></i>\n    <span id=\"toast-message\">Message</span>\n  </div>\n</div>", "new_string": "<!-- ==================== ADD USER MODAL (Admin Only) ==================== -->\n<div id=\"add-user-modal\" class=\"modal-overlay fixed inset-0 bg-gray-900 bg-opacity-60 items-center justify-center z-[70] p-4\">\n  <div class=\"bg-white rounded-2xl shadow-2xl w-full max-w-md slide-in\">\n    <div class=\"px-6 py-4 flex justify-between items-center rounded-t-2xl\" style=\"background:linear-gradient(135deg,#630f0f,#ff6929)\">\n      <h3 class=\"text-white font-bold\"><i class=\"fa-solid fa-user-plus mr-2\"></i>Add New Team Member</h3>\n      <button onclick=\"closeModal('add-user-modal')\" class=\"text-white hover:text-orange-200\"><i class=\"fa-solid fa-times text-xl\"></i></button>\n    </div>\n    <div class=\"p-6 space-y-4\">\n      <div>\n        <label class=\"block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide\">Full Name *</label>\n        <input type=\"text\" id=\"new-user-name\" placeholder=\"e.g., Rajesh Kumar\" class=\"w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-orange-400 outline-none\">\n      </div>\n      <div>\n        <label class=\"block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide\">Email *</label>\n        <input type=\"email\" id=\"new-user-email\" placeholder=\"rajesh.precitech1981@gmail.com\" class=\"w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-orange-400 outline-none\">\n      </div>\n      <div>\n        <label class=\"block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide\">Role *</label>\n        <select id=\"new-user-role\" class=\"w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-orange-400 outline-none\">\n          <option value=\"user\">User</option>\n          <option value=\"admin\">Admin</option>\n        </select>\n      </div>\n      <div class=\"bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800\">\n        <i class=\"fa-solid fa-info-circle mr-1\"></i>\n        Default password: <strong>Precitech@1981</strong>\n      </div>\n      <div class=\"flex gap-3\">\n        <button onclick=\"closeModal('add-user-modal')\" class=\"flex-1 border border-gray-200 text-gray-600 font-bold py-2.5 rounded-xl hover:bg-gray-50 transition text-sm\">\n          Cancel\n        </button>\n        <button onclick=\"submitNewUser()\" class=\"flex-1 text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition text-sm\" style=\"background:linear-gradient(135deg,#ff6929,#e55a1c)\">\n          <i class=\"fa-solid fa-user-plus mr-2\"></i>Add User\n        </button>\n      </div>\n    </div>\n  </div>\n</div>\n\n<!-- ==================== TOAST ==================== -->\n<div id=\"toast\" class=\"fixed bottom-6 right-6 z-[100] transition-all duration-300 translate-y-20 opacity-0\">\n  <div id=\"toast-content\" class=\"px-5 py-3.5 rounded-xl shadow-xl text-white font-bold flex items-center gap-3 min-w-[260px]\">\n    <i id=\"toast-icon\" class=\"fa-solid fa-check-circle text-lg flex-shrink-0\"></i>\n    <span id=\"toast-message\">Message</span>\n  </div>\n</div>"}
+{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "        <div class=\"sm:col-span-2\">\n          <label class=\"block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide\">Assign To *</label>\n          <select id=\"assign-to\" class=\"w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-orange-400 outline-none\">\n            <option value=\"\">-- Select Member --</option>\n          </select>\n        </div>", "new_string": "        <div class=\"sm:col-span-2\">\n          <label class=\"block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide\">Assign To *</label>\n          <select id=\"assign-to\" class=\"w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-orange-400 outline-none\">\n            <option value=\"\">-- Select Member --</option>\n          </select>\n          <button type=\"button\" id=\"add-member-link\" onclick=\"openAddUserFromAssign()\" class=\"hidden mt-2 text-orange-600 hover:text-orange-800 text-xs font-bold flex items-center gap-1\">\n            <i class=\"fa-solid fa-plus-circle\"></i> Add New Team Member\n          </button>\n        </div>"}
+{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "    <!-- Logout -->\n    <div class=\"px-3 py-4 border-t border-gray-100\">\n      <button onclick=\"doLogout()\" class=\"w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition\">\n        <i class=\"fa-solid fa-sign-out-alt w-5 text-center\"></i> Logout\n      </button>\n    </div>\n  </div>", "new_string": "    <!-- Admin Actions (Only for admins) -->\n    <div id=\"admin-actions-section\" class=\"px-3 py-4 border-t border-gray-100 hidden\">\n      <button onclick=\"openModal('add-user-modal')\" class=\"w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-orange-600 hover:bg-orange-50 transition\">\n        <i class=\"fa-solid fa-user-plus w-5 text-center\"></i> Add New User\n      </button>\n    </div>\n\n    <!-- Logout -->\n    <div class=\"px-3 py-4 border-t border-gray-100\">\n      <button onclick=\"doLogout()\" class=\"w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition\">\n        <i class=\"fa-solid fa-sign-out-alt w-5 text-center\"></i> Logout\n      </button>\n    </div>\n  </div>"}
+Input
+{"pattern": "function initApp", "path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "output_mode": "content", "-n": true, "-A": 30}
+Result
+947:function initApp() {
+948-  allTasks = getTasks();
+949-  const users = getUsers();
+950-  const user = users[currentUser.toLowerCase()];
+951-  const name = user ? user.name : getUserName(currentUser);
+952-
+953-  document.getElementById('user-avatar').innerText = name.charAt(0).toUpperCase();
+954-  document.getElementById('sidebar-name').innerText = name;
+955-  document.getElementById('sidebar-email').innerText = currentUser;
+956-
+957-  // Admin check
+958-  if (ADMIN_EMAILS.includes(currentUser)) {
+959-    document.getElementById('nav-admin').classList.remove('hidden');
+960-    // Populate admin user filter
+961-    const sel = document.getElementById('admin-filter-user');
+962-    TEAM_MEMBERS.forEach(m => {
+963-      const o = document.createElement('option'); 
+964-      o.value = m.email; 
+965-      o.innerText = m.name + ' (' + m.email.split('@')[0] + ')'; 
+966-      sel.appendChild(o);
+967-    });
+968-  }
+969-
+970-  // Populate assign-to dropdown
+971-  const asel = document.getElementById('assign-to');
+972-  if (asel) {
+973-    asel.innerHTML = '<option value="">-- Select Member --</option>';
+974-    TEAM_MEMBERS.forEach(m => {
+975-      const o = document.createElement('option');
+{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "function initApp() {\n  allTasks = getTasks();\n  const users = getUsers();\n  const user = users[currentUser.toLowerCase()];\n  const name = user ? user.name : getUserName(currentUser);\n\n  document.getElementById('user-avatar').innerText = name.charAt(0).toUpperCase();\n  document.getElementById('sidebar-name').innerText = name;\n  document.getElementById('sidebar-email').innerText = currentUser;\n\n  // Admin check\n  if (ADMIN_EMAILS.includes(currentUser)) {\n    document.getElementById('nav-admin').classList.remove('hidden');\n    // Populate admin user filter\n    const sel = document.getElementById('admin-filter-user');\n    TEAM_MEMBERS.forEach(m => {\n      const o = document.createElement('option'); \n      o.value = m.email; \n      o.innerText = m.name + ' (' + m.email.split('@')[0] + ')'; \n      sel.appendChild(o);\n    });\n  }", "new_string": "function initApp() {\n  allTasks = getTasks();\n  const users = getUsers();\n  \n  // Get user with both key formats\n  const emailKey = currentUser.toLowerCase().replace(/\\./g, '_').replace(/@/g, '_at_');\n  const user = users[currentUser.toLowerCase()] || users[emailKey];\n  const name = user ? user.name : getUserName(currentUser);\n  const userRole = user ? user.role : 'user';\n\n  document.getElementById('user-avatar').innerText = name.charAt(0).toUpperCase();\n  document.getElementById('sidebar-name').innerText = name;\n  document.getElementById('sidebar-email').innerText = currentUser;\n\n  // Admin check - use role from Firebase\n  const isAdmin = userRole === 'admin' || ADMIN_EMAILS.includes(currentUser);\n  \n  if (isAdmin) {\n    document.getElementById('nav-admin').classList.remove('hidden');\n    document.getElementById('admin-actions-section').classList.remove('hidden');\n    document.getElementById('add-member-link').classList.remove('hidden');\n    \n    // Populate admin user filter\n    const sel = document.getElementById('admin-filter-user');\n    TEAM_MEMBERS.forEach(m => {\n      const o = document.createElement('option'); \n      o.value = m.email; \n      o.innerText = m.name + ' (' + m.email.split('@')[0] + ')'; \n      sel.appendChild(o);\n    });\n  }"}
+Input
+{"pattern": "function deleteTask", "path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "output_mode": "content", "-n": true, "-A": 20}
+Result
+1780:function deleteTask(taskId) {
+1781-  if (!ADMIN_EMAILS.includes(currentUser)) {
+1782-    showToast('Only admins can delete tasks', 'error');
+1783-    return;
+1784-  }
+1785-  
+1786-  if (!confirm('Are you sure you want to delete task ' + taskId + '? This cannot be undone.')) {
+1787-    return;
+1788-  }
+1789-  
+1790-  const tasks = getTasks();
+1791-  const filtered = tasks.filter(t => t.taskId !== taskId);
+1792-  saveTasks(filtered);
+1793-  
+1794-  // Also delete comments
+1795-  database.ref('comments/' + taskId).remove();
+1796-  
+1797-  showToast('Task deleted successfully', 'success');
+1798-  renderAdminPanel();
+{"replace_all": false, "file_path": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538/index.html", "old_string": "function deleteTask(taskId) {\n  if (!ADMIN_EMAILS.includes(currentUser)) {\n    showToast('Only admins can delete tasks', 'error');\n    return;\n  }\n  \n  if (!confirm('Are you sure you want to delete task ' + taskId + '? This cannot be undone.')) {\n    return;\n  }\n  \n  const tasks = getTasks();\n  const filtered = tasks.filter(t => t.taskId !== taskId);\n  saveTasks(filtered);\n  \n  // Also delete comments\n  database.ref('comments/' + taskId).remove();\n  \n  showToast('Task deleted successfully', 'success');\n  renderAdminPanel();\n}", "new_string": "function deleteTask(taskId) {\n  if (!ADMIN_EMAILS.includes(currentUser)) {\n    showToast('Only admins can delete tasks', 'error');\n    return;\n  }\n  \n  if (!confirm('Are you sure you want to delete task ' + taskId + '? This cannot be undone.')) {\n    return;\n  }\n  \n  const tasks = getTasks();\n  const filtered = tasks.filter(t => t.taskId !== taskId);\n  saveTasks(filtered);\n  \n  // Also delete comments\n  database.ref('comments/' + taskId).remove();\n  \n  showToast('Task deleted successfully', 'success');\n  renderAdminPanel();\n}\n\n// ============================================================\n//  ADD NEW USER (Admin Only)\n// ============================================================\nfunction openAddUserFromAssign() {\n  closeModal('assign-modal');\n  openModal('add-user-modal');\n}\n\nfunction submitNewUser() {\n  const name = document.getElementById('new-user-name').value.trim();\n  const email = document.getElementById('new-user-email').value.trim().toLowerCase();\n  const role = document.getElementById('new-user-role').value;\n\n  // Validation\n  if (!name) {\n    showToast('Please enter user name', 'error');\n    return;\n  }\n  if (!email) {\n    showToast('Please enter user email', 'error');\n    return;\n  }\n  if (!email.includes('@')) {\n    showToast('Please enter a valid email address', 'error');\n    return;\n  }\n\n  // Check if user already exists\n  const users = getUsers();\n  const emailKey = email.toLowerCase().replace(/\\./g, '_').replace(/@/g, '_at_');\n  \n  if (users[email] || users[emailKey]) {\n    showToast('User with this email already exists!', 'error');\n    return;\n  }\n\n  console.log('➕ Adding new user:', name, email, role);\n\n  // Add to Firebase users\n  const newUserData = {\n    email: email,\n    name: name,\n    password: 'Precitech@1981',\n    role: role\n  };\n\n  database.ref('users/' + emailKey).set(newUserData).then(() => {\n    console.log('✅ User added to Firebase');\n\n    // Add to TEAM_MEMBERS array\n    TEAM_MEMBERS.push({ name: name, email: email, role: role });\n\n    // Update assign-to dropdown\n    const asel = document.getElementById('assign-to');\n    if (asel) {\n      const o = document.createElement('option');\n      o.value = email;\n      o.innerText = name;\n      asel.appendChild(o);\n    }\n\n    // Update admin filter dropdown if visible\n    const adminSel = document.getElementById('admin-filter-user');\n    if (adminSel && !adminSel.classList.contains('hidden')) {\n      const o = document.createElement('option');\n      o.value = email;\n      o.innerText = name + ' (' + email.split('@')[0] + ')';\n      adminSel.appendChild(o);\n    }\n\n    // Clear form\n    document.getElementById('new-user-name').value = '';\n    document.getElementById('new-user-email').value = '';\n    document.getElementById('new-user-role').value = 'user';\n\n    closeModal('add-user-modal');\n    showToast('✅ User added successfully! Default password: Precitech@1981', 'success');\n\n  }).catch(err => {\n    console.error('❌ Failed to add user:', err);\n    showToast('Failed to add user: ' + err.message, 'error');\n  });\n}"}
+Input
+{"local_dir": "/home/user/workspaces/***/f9d8e804-3093-4b9c-9f6e-017471a28538", "index_file": "index.html"}
+Result
+Static site deployed successfully: {"url":"https://creao-build-studio-production.s3-us-west-2.amazonaws.com/agentapp-static/28212300-c061-70f2-d422-631c04b5f21f/iSDUhn1U52/index.html"}
