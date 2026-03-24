@@ -1,206 +1,2196 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
-const cors = require('cors');
-require('dotenv').config();
 
-const app = express();
-app.use(express.json());
-app.use(cors());
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Precitech Task Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; }
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/task-management', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #ff6929; }
 
-// User Schema
-const userSchema = new mongoose.Schema({
-  username: { type: String, unique: true, required: true },
-  email: { type: String, unique: true, required: true },
-  password: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now }
-});
+    .fade-in { animation: fadeIn 0.35s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-// Task Schema
-const taskSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: String,
-  assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  status: { type: String, enum: ['pending', 'in-progress', 'completed'], default: 'pending' },
-  dueDate: Date,
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
+    .slide-in { animation: slideIn 0.3s ease forwards; }
+    @keyframes slideIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
-const User = mongoose.model('User', userSchema);
-const Task = mongoose.model('Task', taskSchema);
+    .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-// Email Configuration
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+    .glass-card { background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
 
-// Middleware: Verify JWT Token
-const verifyToken = (req, res, next) => {
-  const token = req.headers['authorization'];
-  if (!token) return res.status(403).json({ message: 'No token provided' });
+    .modal-overlay { display: none; opacity: 0; transition: opacity 0.25s; }
+    .modal-overlay.active { display: flex; opacity: 1; }
+
+    .priority-high { background: #fee2e2; color: #991b1b; }
+    .priority-medium { background: #fef3c7; color: #92400e; }
+    .priority-low { background: #dcfce7; color: #166534; }
+
+    .due-today-row { background: linear-gradient(90deg, #fff7ed, #fff) !important; border-left: 4px solid #f97316 !important; }
+    .overdue-row { background: linear-gradient(90deg, #fef2f2, #fff) !important; border-left: 4px solid #ef4444 !important; }
+
+    .tab-btn { transition: all 0.2s; border-bottom: 3px solid transparent; }
+    .tab-btn.active { border-bottom-color: #ff6929; color: #ff6929; }
+
+    .sidebar { transition: transform 0.3s ease; }
+    @media(max-width:768px) { .sidebar { position: fixed; z-index: 40; width: 280px !important; height: 100vh; top: 0; left: 0; transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } }
+
+    input[type=file]::file-selector-button { background: #ff6929; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-right: 10px; }
+
+    .comment-bubble { border-left: 3px solid #ff6929; }
+
+    .notif-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; position: absolute; top: -2px; right: -2px; }
+  </style>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   
-  jwt.verify(token.split(' ')[1], process.env.JWT_SECRET || 'secret_key', (err, decoded) => {
-    if (err) return res.status(401).json({ message: 'Token expired' });
-    req.userId = decoded.id;
-    next();
-  });
-};
-
-// Register User
-app.post('/api/register', async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    const user = new User({
-      username,
-      email,
-      password: hashedPassword
-    });
-    
-    await user.save();
-    res.status(201).json({ message: 'User registered successfully', user });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Login User
-app.post('/api/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) return res.status(401).json({ message: 'Invalid password' });
-    
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret_key', {
-      expiresIn: '7d'
-    });
-    
-    res.json({ token, user });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get All Users (for assignment)
-app.get('/api/users', verifyToken, async (req, res) => {
-  try {
-    const users = await User.find().select('-password');
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Assign Task
-app.post('/api/tasks', verifyToken, async (req, res) => {
-  try {
-    const { title, description, assignedToId, dueDate } = req.body;
-    
-    const task = new Task({
-      title,
-      description,
-      assignedBy: req.userId,
-      assignedTo: assignedToId,
-      dueDate
-    });
-    
-    await task.save();
-    
-    // Send Email Notification
-    const assignedUser = await User.findById(assignedToId);
-    const assignedByUser = await User.findById(req.userId);
-    
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: assignedUser.email,
-      subject: 'New Task Assigned',
-      html: `
-        <h2>New Task Assigned to You</h2>
-        <p><strong>Task Title:</strong> ${title}</p>
-        <p><strong>Description:</strong> ${description}</p>
-        <p><strong>Assigned by:</strong> ${assignedByUser.username}</p>
-        <p><strong>Due Date:</strong> ${dueDate}</p>
-      `
+  <script>
+    // Firebase Configuration - Updated with new Realtime Database
+    const firebaseConfig = {
+      apiKey: "AIzaSyBkWOLHGfhZZ75NBGQtE4iEyAZgFnhjSG4",
+      authDomain: "precitech1981-task.firebaseapp.com",
+      databaseURL: "https://precitech1981-task-default-rtdb.firebaseio.com",
+      projectId: "precitech1981-task",
+      storageBucket: "precitech1981-task.firebasestorage.app",
+      messagingSenderId: "565723601746",
+      appId: "1:565723601746:web:fec969a6f1f617d9cbb88b",
+      measurementId: "G-QZK79RX1CX"
     };
-    
-    transporter.sendMail(mailOptions, (err, info) => {
-      if (err) console.log('Email error:', err);
-      else console.log('Email sent:', info.response);
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const auth = firebase.auth();
+
+    console.log('✅ Firebase initialized successfully with new database:', firebaseConfig.databaseURL);
+
+    // Enable Anonymous Authentication for Firebase Rules compatibility
+    auth.signInAnonymously()
+      .then(() => {
+        console.log('✅ Firebase Anonymous Auth signed in successfully');
+      })
+      .catch((error) => {
+        console.error('❌ Firebase Auth Error:', error.code, error.message);
+      });
+
+    // Firebase connection monitor
+    const connectedRef = database.ref('.info/connected');
+    connectedRef.on('value', (snap) => {
+      if (snap.val() === true) {
+        console.log('✅ Connected to Firebase');
+        // Update debug panel
+        const statusEl = document.getElementById('firebase-status');
+        if (statusEl) statusEl.innerText = '✅ Connected';
+      } else {
+        console.log('⚠️ Disconnected from Firebase');
+        const statusEl = document.getElementById('firebase-status');
+        if (statusEl) statusEl.innerText = '❌ Disconnected';
+      }
     });
-    
-    res.status(201).json({ message: 'Task assigned', task });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-// Get My Tasks (Only tasks assigned to current user)
-app.get('/api/my-tasks', verifyToken, async (req, res) => {
-  try {
-    const tasks = await Task.find({ assignedTo: req.userId })
-      .populate('assignedBy', 'username email')
-      .populate('assignedTo', 'username email');
-    
-    res.json(tasks);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-// Update Task Status
-app.put('/api/tasks/:taskId', verifyToken, async (req, res) => {
-  try {
-    const { status } = req.body;
-    const task = await Task.findById(req.params.taskId);
-    
-    if (!task) return res.status(404).json({ message: 'Task not found' });
-    if (task.assignedTo.toString() !== req.userId) {
-      return res.status(403).json({ message: 'Not authorized' });
+  
+
+// Firebase loading helpers
+function showFirebaseLoading() {
+  const loader = document.getElementById('firebase-loading');
+  if (loader) loader.style.display = 'flex';
+}
+
+function hideFirebaseLoading() {
+  const loader = document.getElementById('firebase-loading');
+  if (loader) loader.style.display = 'none';
+}
+
+</script>
+
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen">
+
+<!-- ==================== LOGIN SCREEN ==================== -->
+<div id="login-screen" class="fixed inset-0 z-[200] flex items-center justify-center" style="background: linear-gradient(135deg, #630f0f 0%, #c0392b 50%, #ff6929 100%);">
+  <div class="w-full max-w-md mx-4">
+    <div class="bg-white rounded-3xl shadow-2xl overflow-hidden fade-in">
+      <div class="px-8 pt-10 pb-6 text-center" style="background: linear-gradient(135deg, #630f0f, #ff6929);">
+        <div class="mx-auto mb-4 flex items-center justify-center" style="width:100px;height:auto;">
+          <img src="data:image/png;base64,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" alt="Precitech Logo" style="width:100px;height:auto;object-fit:contain;">
+        </div>
+        <h1 class="text-2xl font-bold text-white">Precitech Tasks</h1>
+        <p class="text-orange-200 text-sm mt-1">Sign in to your account</p>
+      </div>
+      <div class="px-8 py-8 space-y-5">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Email Address</label>
+          <div class="relative">
+            <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="email" id="login-email" placeholder="yourname@precitech1981.com"
+              class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none transition">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Password</label>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="password" id="login-password" placeholder="Enter your password"
+              class="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none transition"
+              onkeydown="if(event.key==='Enter') doLogin()">
+            <button onclick="togglePass('login-password','eye-login')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <i id="eye-login" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div id="login-error" class="hidden text-red-500 text-sm flex items-center gap-2">
+          <i class="fa-solid fa-circle-exclamation"></i><span></span>
+        </div>
+        <button onclick="doLogin()" class="w-full text-white font-bold py-3 px-4 rounded-xl transition hover:opacity-90 active:scale-95" style="background: linear-gradient(135deg, #ff6929, #e55a1c);">
+          <i class="fa-solid fa-sign-in-alt mr-2"></i>Sign In
+        </button>
+        <p class="text-center text-xs text-gray-400">Contact admin to register your account</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MAIN LAYOUT ==================== -->
+<div id="app-layout" class="flex h-screen overflow-hidden" style="display:none!important">
+
+  <!-- Sidebar -->
+  <div id="sidebar" class="sidebar w-64 bg-white shadow-xl flex flex-col">
+    <div class="px-4 py-4 flex items-center gap-3" style="background: linear-gradient(135deg, #630f0f, #ff6929);">
+      <img src="data:image/png;base64,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" alt="Precitech Logo" class="flex-shrink-0" style="width:44px;height:44px;object-fit:contain;">
+      <div>
+        <div class="text-white font-bold text-sm leading-tight">Precitech</div>
+        <div class="text-orange-200 text-xs">Task Manager</div>
+      </div>
+      <button onclick="closeSidebar()" class="ml-auto text-orange-200 hover:text-white md:hidden">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+
+    <!-- User Info -->
+    <div class="px-4 py-4 border-b border-gray-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm" style="background: linear-gradient(135deg,#630f0f,#ff6929);">
+          <span id="user-avatar">?</span>
+        </div>
+        <div class="overflow-hidden">
+          <div id="sidebar-name" class="font-bold text-xs text-gray-800 truncate">Loading...</div>
+          <div id="sidebar-email" class="text-xs text-gray-400 truncate">...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav Links -->
+    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50 hover:text-orange-600">
+        <i class="fa-solid fa-gauge-high w-5 text-center"></i> Dashboard
+      </button>
+      <button onclick="showSection('my-tasks')" id="nav-my-tasks" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50 hover:text-orange-600">
+        <i class="fa-solid fa-list-check w-5 text-center"></i> My Tasks
+        <span id="nav-badge-my" class="ml-auto bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full hidden"></span>
+      </button>
+      <button onclick="showSection('assigned-by')" id="nav-assigned-by" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50 hover:text-orange-600">
+        <i class="fa-solid fa-paper-plane w-5 text-center"></i> Assigned By Me
+        <span id="nav-badge-by" class="ml-auto bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full hidden"></span>
+      </button>
+      <button onclick="showSection('admin')" id="nav-admin" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50 hover:text-orange-600 hidden" id="nav-admin">
+        <i class="fa-solid fa-user-shield w-5 text-center"></i> Admin Panel
+      </button>
+    </nav>
+
+    <!-- Admin Actions (Only for admins) -->
+    <div id="admin-actions-section" class="px-3 py-4 border-t border-gray-100 hidden">
+      <button onclick="openModal('add-user-modal')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-orange-600 hover:bg-orange-50 transition">
+        <i class="fa-solid fa-user-plus w-5 text-center"></i> Add New User
+      </button>
+    </div>
+
+    <!-- Logout -->
+    <div class="px-3 py-4 border-t border-gray-100">
+      <button onclick="doLogout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition">
+        <i class="fa-solid fa-sign-out-alt w-5 text-center"></i> Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar overlay for mobile -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-40 z-30 hidden md:hidden" onclick="closeSidebar()"></div>
+
+  <!-- Main Panel -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- Top Bar -->
+    <header class="bg-white border-b border-gray-200 px-4 sm:px-6 h-16 flex items-center justify-between flex-shrink-0 shadow-sm">
+      <div class="flex items-center gap-3">
+        <button onclick="openSidebar()" class="md:hidden text-gray-500 hover:text-gray-700">
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+        <h2 id="page-title" class="font-bold text-gray-800 text-lg">Dashboard</h2>
+      </div>
+      <div class="flex items-center gap-3">
+        <!-- Deadline Notif Bell -->
+        <div class="relative">
+          <button onclick="toggleNotifPanel()" class="w-9 h-9 rounded-xl bg-gray-100 hover:bg-orange-100 flex items-center justify-center text-gray-500 hover:text-orange-600 transition">
+            <i class="fa-solid fa-bell"></i>
+          </button>
+          <span id="notif-dot" class="notif-dot hidden"></span>
+          <!-- Notif panel -->
+          <div id="notif-panel" class="hidden absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 max-h-80 overflow-y-auto">
+            <div class="px-4 py-3 border-b font-bold text-sm text-gray-700">Deadline Reminders</div>
+            <div id="notif-list" class="p-2"></div>
+          </div>
+        </div>
+        <button onclick="openModal('assign-modal')" class="px-4 py-2 rounded-xl text-white text-sm font-bold shadow transition hover:shadow-md active:scale-95" style="background: linear-gradient(135deg,#ff6929,#e55a1c);">
+          <i class="fa-solid fa-plus mr-2"></i><span class="hidden sm:inline">New Task</span><span class="sm:hidden">Task</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="flex-1 overflow-y-auto p-4 sm:p-6">
+
+      <!-- ====== DASHBOARD SECTION ====== -->
+      <div id="section-dashboard" class="section fade-in">
+        <!-- Stats -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="glass-card p-5 rounded-2xl shadow-sm border-l-4 border-blue-500">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">My Tasks</p>
+            <h3 id="stat-total" class="text-3xl font-bold text-gray-800 mt-1">0</h3>
+          </div>
+          <div class="glass-card p-5 rounded-2xl shadow-sm border-l-4 border-amber-400">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Pending</p>
+            <h3 id="stat-pending" class="text-3xl font-bold text-amber-500 mt-1">0</h3>
+          </div>
+          <div class="glass-card p-5 rounded-2xl shadow-sm border-l-4 border-indigo-500">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">In Progress</p>
+            <h3 id="stat-progress" class="text-3xl font-bold text-indigo-600 mt-1">0</h3>
+          </div>
+          <div class="glass-card p-5 rounded-2xl shadow-sm border-l-4 border-emerald-500">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Completion</p>
+            <h3 id="stat-rate" class="text-3xl font-bold text-emerald-500 mt-1">0%</h3>
+          </div>
+          <div class="glass-card p-5 rounded-2xl shadow-sm border-l-4 border-red-500">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Overdue</p>
+            <h3 id="stat-overdue" class="text-3xl font-bold text-red-500 mt-1">0</h3>
+          </div>
+        </div>
+
+        <!-- Due Today Alert -->
+        <div id="due-today-alert" class="hidden mb-6 bg-orange-50 border border-orange-200 rounded-2xl p-4 fade-in">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+              <i class="fa-solid fa-fire text-orange-500"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-orange-800">Tasks Due Today!</h4>
+              <p class="text-sm text-orange-600 mt-0.5">The following tasks are due today — complete them ASAP.</p>
+              <div id="due-today-list" class="mt-2 space-y-1"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Tasks -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-bold text-gray-800">Recent Tasks Overview</h3>
+          </div>
+          <div id="dashboard-recent" class="divide-y divide-gray-50"></div>
+        </div>
+      </div>
+
+      <!-- ====== MY TASKS SECTION ====== -->
+      <div id="section-my-tasks" class="section hidden">
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5 fade-in">
+          <div class="flex flex-wrap gap-3 items-end">
+            <div class="flex-1 min-w-[130px]">
+              <label class="block text-xs font-bold text-gray-500 mb-1">From Date</label>
+              <input type="date" id="filter-from" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+            </div>
+            <div class="flex-1 min-w-[130px]">
+              <label class="block text-xs font-bold text-gray-500 mb-1">To Date</label>
+              <input type="date" id="filter-to" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+            </div>
+            <div class="flex-1 min-w-[130px]">
+              <label class="block text-xs font-bold text-gray-500 mb-1">Status</label>
+              <select id="filter-status" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+                <option value="">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+            <div class="flex-1 min-w-[130px]">
+              <label class="block text-xs font-bold text-gray-500 mb-1">Priority</label>
+              <select id="filter-priority" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+                <option value="">All Priority</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="applyFilter()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
+                <i class="fa-solid fa-filter mr-1"></i> Filter
+              </button>
+              <button onclick="clearFilter()" class="border border-gray-200 text-gray-500 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg text-sm transition">Clear</button>
+              <button onclick="exportTasks()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
+                <i class="fa-solid fa-file-excel mr-1"></i> Export
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tasks Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden fade-in">
+          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+            <h3 class="font-bold" style="color:#630f0f">Tasks Assigned To Me</h3>
+            <span id="count-to" class="bg-orange-100 text-orange-800 text-xs font-bold px-2.5 py-1 rounded-full">0</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="text-xs uppercase bg-gray-50 text-gray-500">
+                <tr>
+                  <th class="px-5 py-3 text-left">Assigned By</th>
+                  <th class="px-5 py-3 text-left">Task</th>
+                  <th class="px-5 py-3 text-left">Priority</th>
+                  <th class="px-5 py-3 text-left">Deadline</th>
+                  <th class="px-5 py-3 text-left">Status</th>
+                  <th class="px-5 py-3 text-left">Notes</th>
+                </tr>
+              </thead>
+              <tbody id="table-to" class="divide-y divide-gray-50"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== ASSIGNED BY ME SECTION ====== -->
+      <div id="section-assigned-by" class="section hidden">
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5 fade-in">
+          <div class="flex flex-wrap gap-3 items-end">
+            <div class="flex-1 min-w-[130px]">
+              <label class="block text-xs font-bold text-gray-500 mb-1">From Date</label>
+              <input type="date" id="filter-by-from" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+            </div>
+            <div class="flex-1 min-w-[130px]">
+              <label class="block text-xs font-bold text-gray-500 mb-1">To Date</label>
+              <input type="date" id="filter-by-to" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+            </div>
+            <div class="flex-1 min-w-[130px]">
+              <label class="block text-xs font-bold text-gray-500 mb-1">Status</label>
+              <select id="filter-by-status" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+                <option value="">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+            <div class="flex-1 min-w-[130px]">
+              <label class="block text-xs font-bold text-gray-500 mb-1">Priority</label>
+              <select id="filter-by-priority" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+                <option value="">All Priority</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="applyFilterByMe()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
+                <i class="fa-solid fa-filter mr-1"></i> Filter
+              </button>
+              <button onclick="clearFilterByMe()" class="border border-gray-200 text-gray-500 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg text-sm transition">Clear</button>
+              <button onclick="exportAssignedByMe()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
+                <i class="fa-solid fa-file-excel mr-1"></i> Export
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tasks Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden fade-in">
+          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+            <h3 class="font-bold" style="color:#630f0f">Tasks Assigned By Me</h3>
+            <span id="count-by" class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">0</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="text-xs uppercase bg-gray-50 text-gray-500">
+                <tr>
+                  <th class="px-5 py-3 text-left">Assigned To</th>
+                  <th class="px-5 py-3 text-left">Task</th>
+                  <th class="px-5 py-3 text-left">Priority</th>
+                  <th class="px-5 py-3 text-left">Deadline</th>
+                  <th class="px-5 py-3 text-left">Status</th>
+                  <th class="px-5 py-3 text-left">Notes</th>
+                </tr>
+              </thead>
+              <tbody id="table-by" class="divide-y divide-gray-50"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== ADMIN SECTION ====== -->
+      <div id="section-admin" class="section hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5 fade-in">
+          <div class="flex flex-wrap gap-3 items-end">
+            <div class="flex-1 min-w-[150px]">
+              <label class="block text-xs font-bold text-gray-500 mb-1">Filter by Member</label>
+              <select id="admin-filter-user" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+                <option value="">All Members</option>
+              </select>
+            </div>
+            <div class="flex-1 min-w-[130px]">
+              <label class="block text-xs font-bold text-gray-500 mb-1">Status</label>
+              <select id="admin-filter-status" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
+                <option value="">All</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="renderAdminPanel()" class="bg-gray-800 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                <i class="fa-solid fa-filter mr-1"></i> Filter
+              </button>
+              <button onclick="exportAllTasks()" class="bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                <i class="fa-solid fa-file-excel mr-1"></i> Export All
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Stats -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+          <div class="glass-card p-4 rounded-2xl shadow-sm border-l-4 border-blue-500">
+            <p class="text-xs font-bold text-gray-400 uppercase">Total Tasks</p>
+            <h3 id="admin-stat-total" class="text-2xl font-bold text-gray-800 mt-1">0</h3>
+          </div>
+          <div class="glass-card p-4 rounded-2xl shadow-sm border-l-4 border-amber-400">
+            <p class="text-xs font-bold text-gray-400 uppercase">Pending</p>
+            <h3 id="admin-stat-pending" class="text-2xl font-bold text-amber-500 mt-1">0</h3>
+          </div>
+          <div class="glass-card p-4 rounded-2xl shadow-sm border-l-4 border-indigo-500">
+            <p class="text-xs font-bold text-gray-400 uppercase">In Progress</p>
+            <h3 id="admin-stat-progress" class="text-2xl font-bold text-indigo-600 mt-1">0</h3>
+          </div>
+          <div class="glass-card p-4 rounded-2xl shadow-sm border-l-4 border-emerald-500">
+            <p class="text-xs font-bold text-gray-400 uppercase">Completed</p>
+            <h3 id="admin-stat-completed" class="text-2xl font-bold text-emerald-500 mt-1">0</h3>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="px-5 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <h3 class="font-bold" style="color:#630f0f">All Tasks (Admin View)</h3>
+            <span id="admin-task-count" class="bg-purple-100 text-purple-800 text-xs font-bold px-2.5 py-1 rounded-full">0</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="text-xs uppercase bg-gray-50 text-gray-500">
+                <tr>
+                  <th class="px-5 py-3 text-left">Task ID</th>
+                  <th class="px-5 py-3 text-left">Assigned By</th>
+                  <th class="px-5 py-3 text-left">Assigned To</th>
+                  <th class="px-5 py-3 text-left">Description</th>
+                  <th class="px-5 py-3 text-left">Priority</th>
+                  <th class="px-5 py-3 text-left">Deadline</th>
+                  <th class="px-5 py-3 text-left">Status</th>
+                  <th class="px-5 py-3 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-table" class="divide-y divide-gray-50"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end page content -->
+  </div><!-- end main panel -->
+</div><!-- end layout -->
+
+
+<!-- ==================== ASSIGN TASK MODAL ==================== -->
+<div id="assign-modal" class="modal-overlay fixed inset-0 bg-gray-900 bg-opacity-60 items-center justify-center z-[60] p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg slide-in max-h-[90vh] overflow-y-auto">
+    <div class="px-6 py-4 flex justify-between items-center rounded-t-2xl sticky top-0 z-10" style="background: linear-gradient(135deg,#630f0f,#ff6929)">
+      <h3 class="text-white font-bold text-lg"><i class="fa-solid fa-paper-plane mr-2"></i>Assign New Task</h3>
+      <button onclick="closeModal('assign-modal')" class="text-white hover:text-orange-200"><i class="fa-solid fa-times text-xl"></i></button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2">
+          <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Assign To *</label>
+          <select id="assign-to" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-orange-400 outline-none">
+            <option value="">-- Select Member --</option>
+          </select>
+          <button type="button" id="add-member-link" onclick="openAddUserFromAssign()" class="hidden mt-2 text-orange-600 hover:text-orange-800 text-xs font-bold flex items-center gap-1">
+            <i class="fa-solid fa-plus-circle"></i> Add New Team Member
+          </button>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Description *</label>
+          <div class="relative">
+            <textarea id="assign-desc" rows="3" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 pr-12 focus:ring-2 focus:ring-orange-400 outline-none resize-none" placeholder="What needs to be done? Ya mic dabao aur bolo..."></textarea>
+            <button type="button" id="mic-btn" onclick="toggleVoiceInput()" title="Mic se bolo"
+              class="absolute bottom-2.5 right-2.5 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200"
+              style="background-color: #ff6929;">
+              <i id="mic-icon" class="fa-solid fa-microphone text-white text-sm"></i>
+            </button>
+          </div>
+          <div id="voice-status" class="hidden mt-1.5 flex items-center gap-2 text-xs font-semibold text-red-500">
+            <span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <span id="voice-status-text">Sun raha hoon... Bolte rahiye</span>
+          </div>
+        </div>
+        <div>
+          <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Deadline *</label>
+          <input type="date" id="assign-date" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-orange-400 outline-none">
+        </div>
+        <div>
+          <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Priority *</label>
+          <select id="assign-priority" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-orange-400 outline-none">
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="submitTask()" class="w-full text-white font-bold py-3 rounded-xl hover:opacity-90 active:scale-95 transition" style="background:linear-gradient(135deg,#ff6929,#e55a1c)">
+        <i class="fa-solid fa-check mr-2"></i>Confirm Assignment
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TASK COMPLETE POPUP ==================== -->
+<div id="complete-modal" class="modal-overlay fixed inset-0 bg-gray-900 bg-opacity-60 items-center justify-center z-[70] p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md slide-in">
+    <div class="px-6 py-4 flex justify-between items-center rounded-t-2xl" style="background:linear-gradient(135deg,#166534,#16a34a)">
+      <h3 class="text-white font-bold"><i class="fa-solid fa-circle-check mr-2"></i>Mark as Completed</h3>
+      <button onclick="cancelComplete()" class="text-white hover:text-green-200"><i class="fa-solid fa-times text-xl"></i></button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-800">
+        <i class="fa-solid fa-info-circle mr-2"></i>You are marking this task as <strong>Completed</strong>. Would you like to attach a document as proof?
+      </div>
+      <div>
+        <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Attach Document (Optional)</label>
+        <input type="file" id="complete-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+          class="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl p-2 focus:ring-2 focus:ring-green-400 outline-none">
+        <p class="text-xs text-gray-400 mt-1">Supported: PDF, DOC, DOCX, JPG, PNG, XLS, XLSX (max 5MB)</p>
+      </div>
+      <div>
+        <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Completion Note (Optional)</label>
+        <textarea id="complete-note" rows="2" placeholder="Add a note about this task completion..."
+          class="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-green-400 outline-none resize-none"></textarea>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="cancelComplete()" class="flex-1 border border-gray-200 text-gray-600 font-bold py-2.5 rounded-xl hover:bg-gray-50 transition text-sm">
+          Cancel
+        </button>
+        <button onclick="confirmComplete()" class="flex-1 text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition text-sm" style="background:linear-gradient(135deg,#16a34a,#15803d)">
+          <i class="fa-solid fa-check mr-2"></i>Mark Complete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== COMMENTS MODAL ==================== -->
+<div id="comments-modal" class="modal-overlay fixed inset-0 bg-gray-900 bg-opacity-60 items-center justify-center z-[70] p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg slide-in max-h-[85vh] flex flex-col">
+    <div class="px-6 py-4 flex justify-between items-center rounded-t-2xl flex-shrink-0" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">
+      <h3 class="text-white font-bold"><i class="fa-solid fa-comments mr-2"></i>Comments & Notes</h3>
+      <button onclick="closeModal('comments-modal')" class="text-white hover:text-blue-200"><i class="fa-solid fa-times text-xl"></i></button>
+    </div>
+    <div class="p-4 border-b border-gray-100 flex-shrink-0">
+      <div id="comment-task-info" class="bg-blue-50 rounded-xl p-3 text-sm text-blue-800 font-medium"></div>
+    </div>
+    <div id="comments-list" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+    <div class="p-4 border-t border-gray-100 flex-shrink-0">
+      <div class="flex gap-2">
+        <textarea id="new-comment" rows="2" placeholder="Write a comment or note..."
+          class="flex-1 bg-gray-50 border border-gray-200 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-blue-400 outline-none resize-none"></textarea>
+        <button onclick="addComment()" class="px-4 py-2 text-white rounded-xl font-bold text-sm hover:opacity-90 transition self-end" style="background:#3b82f6">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ADD USER MODAL (Admin Only) ==================== -->
+<div id="add-user-modal" class="modal-overlay fixed inset-0 bg-gray-900 bg-opacity-60 items-center justify-center z-[70] p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md slide-in">
+    <div class="px-6 py-4 flex justify-between items-center rounded-t-2xl" style="background:linear-gradient(135deg,#630f0f,#ff6929)">
+      <h3 class="text-white font-bold"><i class="fa-solid fa-user-plus mr-2"></i>Add New Team Member</h3>
+      <button onclick="closeModal('add-user-modal')" class="text-white hover:text-orange-200"><i class="fa-solid fa-times text-xl"></i></button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Full Name *</label>
+        <input type="text" id="new-user-name" placeholder="e.g., Rajesh Kumar" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-orange-400 outline-none">
+      </div>
+      <div>
+        <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Email *</label>
+        <input type="email" id="new-user-email" placeholder="rajesh.precitech1981@gmail.com" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-orange-400 outline-none">
+      </div>
+      <div>
+        <label class="block mb-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide">Role *</label>
+        <select id="new-user-role" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-2.5 focus:ring-2 focus:ring-orange-400 outline-none">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800">
+        <i class="fa-solid fa-info-circle mr-1"></i>
+        Default password: <strong>Precitech@1981</strong>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="closeModal('add-user-modal')" class="flex-1 border border-gray-200 text-gray-600 font-bold py-2.5 rounded-xl hover:bg-gray-50 transition text-sm">
+          Cancel
+        </button>
+        <button onclick="submitNewUser()" class="flex-1 text-white font-bold py-2.5 rounded-xl hover:opacity-90 transition text-sm" style="background:linear-gradient(135deg,#ff6929,#e55a1c)">
+          <i class="fa-solid fa-user-plus mr-2"></i>Add User
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TOAST ==================== -->
+<div id="toast" class="fixed bottom-6 right-6 z-[100] transition-all duration-300 translate-y-20 opacity-0">
+  <div id="toast-content" class="px-5 py-3.5 rounded-xl shadow-xl text-white font-bold flex items-center gap-3 min-w-[260px]">
+    <i id="toast-icon" class="fa-solid fa-check-circle text-lg flex-shrink-0"></i>
+    <span id="toast-message">Message</span>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  CONFIG & CONSTANTS
+// ============================================================
+const ADMIN_EMAILS = ['tech.precitech1981@gmail.com', 'kp6856658@gmail.com'];
+
+const TEAM_MEMBERS = [
+  {name: 'Vaibhav Wadhwa', email: 'production.precitech1981@gmail.com', role: 'user'},
+  {name: 'Devanshu Arora', email: 'devanshu.precitech1981@gmail.com', role: 'user'},
+  {name: 'Kanhaiya Pandey', email: 'tech.precitech1981@gmail.com', role: 'admin'},
+  {name: 'Shilpa Das', email: 'hr.precitech1981@gmail.com', role: 'user'},
+  {name: 'Raushan Kumar', email: 'raushan.precitech1981@gmail.com', role: 'user'},
+  {name: 'Deepak Singh', email: 'supply.precitech1981@gmail.com', role: 'user'},
+  {name: 'Raghvendra Shakya', email: 'raghvendra.precitech1981@gmail.com', role: 'user'},
+  {name: 'Manish Kumar', email: 'manish.precitech1981@gmail.com', role: 'user'},
+  {name: 'Bhakti Ram', email: 'bhakti.precitech1981@gmail.com', role: 'user'},
+  {name: 'Garv Sachdeva', email: 'garv.precitech1981@gmail.com', role: 'user'},
+  {name: 'Vikash Kumar', email: 'vikash.precitech1981@gmail.com', role: 'user'},
+  {name: 'Chandan Kumar', email: 'chandan.precitech1981@gmail.com', role: 'user'},
+  {name: 'Sobran Singh', email: 'sobranprecitech1981@gmail.com', role: 'user'},
+  {name: 'Arvind Kumar Yadav', email: 'arvind.precitech1981@gmail.com', role: 'user'},
+  {name: 'Amit Singh', email: 'amit.precitech1981@gmail.com', role: 'user'},
+  {name: 'Pramod Kumar', email: 'pramod.precitech1981@gmail.com', role: 'user'},
+  {name: 'Dharmendra Singh', email: 'dharmendra.precitech1981@gmail.com', role: 'user'},
+  {name: 'Binod Kumar', email: 'binod.precitech1981@gmail.com', role: 'user'},
+  {name: 'Vinay Sharma', email: 'vinay.precitech1981@gmail.com', role: 'user'},
+  {name: 'Vaibhav Wadhwa', email: 'production@precitech1981.com', role: 'user'},
+  {name: 'Deepak Singh', email: 'supplychain@precitech1981.com', role: 'user'},
+  {name: 'Raushan Kumar', email: 'accounts@precitech1981.com', role: 'user'},
+  {name: 'Chandan Kumar', email: 'quality@precitech1981.com', role: 'user'},
+  {name: 'Devanshu Arora', email: 'devanshuarora@precitech1981.com', role: 'user'}
+];
+
+// ============================================================
+//  STATE
+// ============================================================
+let currentUser = null;
+let allTasks = [];
+let pendingCompleteTaskId = null;
+let activeCommentTaskId = null;
+let filterActive = false;
+
+// ============================================================
+//  STORAGE HELPERS
+// ============================================================
+function getTasks() {
+  // Synchronous read from cache (populated by listener)
+  return window.cachedTasks || [];
+}
+
+// Firebase listener for real-time tasks sync
+window.cachedTasks = [];
+let tasksListenerSetup = false;
+
+function setupTasksListener() {
+  if (tasksListenerSetup) return;
+  tasksListenerSetup = true;
+
+  console.log('🔄 Setting up tasks real-time listener...');
+  database.ref('tasks').on('value', (snapshot) => {
+    const data = snapshot.val();
+    window.cachedTasks = data ? Object.values(data) : [];
+    allTasks = window.cachedTasks;
+
+    console.log('📋 Tasks updated from Firebase:', window.cachedTasks.length);
+
+    // Update debug panel
+    const tasksStatusEl = document.getElementById('tasks-status');
+    if (tasksStatusEl) {
+      tasksStatusEl.innerHTML = `Tasks: ${window.cachedTasks.length}`;
+      tasksStatusEl.style.color = '#10b981';
     }
-    
-    task.status = status;
-    task.updatedAt = Date.now();
-    await task.save();
-    
-    res.json({ message: 'Task updated', task });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+
+    if (currentUser) {
+      renderDashboard();
+    }
+  }, (error) => {
+    console.error('❌ Tasks listener error:', error);
+  });
+}
+function saveTasks(tasks) {
+  console.log('💾 Saving tasks to Firebase...', tasks.length, 'tasks');
+
+  // Save to Firebase
+  const tasksObj = {};
+  tasks.forEach(t => { tasksObj[t.taskId] = t; });
+
+  database.ref('tasks').set(tasksObj)
+    .then(() => {
+      console.log('✅ Tasks saved successfully to Firebase!');
+    })
+    .catch((error) => {
+      console.error('❌ ERROR saving tasks to Firebase:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+
+      // Show user-friendly error
+      if (error.code === 'PERMISSION_DENIED') {
+        alert('⚠️ Firebase Permission Error!\n\nPlease enable:\n1. Firebase Authentication (Anonymous)\n2. Firebase Rules (set .read and .write to "auth != null")\n\nCheck console for details.');
+      } else {
+        alert('Error saving data: ' + error.message);
+      }
+    });
+}
+function getUsers() {
+  return window.cachedUsers || {};
+}
+
+// Firebase listener for users
+window.cachedUsers = {};
+let usersListenerSetup = false;
+
+function setupUsersListener() {
+  if (usersListenerSetup) return;
+  usersListenerSetup = true;
+
+  console.log('🔄 Setting up users real-time listener...');
+  database.ref('users').on('value', (snapshot) => {
+    window.cachedUsers = snapshot.val() || {};
+    const count = Object.keys(window.cachedUsers).length;
+    console.log('👥 Users updated from Firebase:', count);
+
+    // Update debug panel
+    const usersStatusEl = document.getElementById('users-status');
+    if (usersStatusEl) {
+      usersStatusEl.innerHTML = `Users: ${count}`;
+      usersStatusEl.style.color = count > 0 ? '#10b981' : '#f59e0b';
+    }
+  }, (error) => {
+    console.error('❌ Users listener error:', error);
+  });
+}
+
+// Helper: Get user name from email
+function getUserName(email) {
+  if (!email) return 'Unknown';
+  const users = getUsers();
+  // Try both dot and underscore formats
+  const dotKey = email.toLowerCase();
+  const underscoreKey = email.toLowerCase().replace(/\./g, '_').replace(/@/g, '_at_');
+  return users[dotKey] ? users[dotKey].name : users[underscoreKey] ? users[underscoreKey].name : email.split('@')[0];
+}
+
+function saveUsers(u) {
+  database.ref('users').set(u);
+}
+function getComments(taskId) {
+  return window.cachedComments ? (window.cachedComments[taskId] || []) : [];
+}
+
+// Firebase listener for comments
+window.cachedComments = {};
+let commentsListenerSetup = false;
+
+function setupCommentsListener() {
+  if (commentsListenerSetup) return;
+  commentsListenerSetup = true;
+
+  console.log('🔄 Setting up comments real-time listener...');
+  database.ref('comments').on('value', (snapshot) => {
+    window.cachedComments = snapshot.val() || {};
+    console.log('💬 Comments updated from Firebase');
+  }, (error) => {
+    console.error('❌ Comments listener error:', error);
+  });
+}
+function saveComments(taskId, comments) {
+  database.ref('comments/' + taskId).set(comments);
+}
+function getEmailLog() {
+  return window.cachedEmailLog || [];
+}
+
+// Firebase listener for email log
+window.cachedEmailLog = [];
+database.ref('emailLog').on('value', (snapshot) => {
+  window.cachedEmailLog = snapshot.val() ? Object.values(snapshot.val()) : [];
+});
+function addEmailLog(entry) {
+  const log = getEmailLog();
+  log.push({ ...entry, sentAt: new Date().toISOString() });
+  database.ref('emailLog').push(log[log.length - 1]);  // Save new email to Firebase
+}
+
+// ============================================================
+//  SEED USERS (demo accounts)
+// ============================================================
+function seedUsers() {
+  console.log('🌱 Seeding users to Firebase...');
+
+  database.ref('users').once('value').then((snapshot) => {
+    const existingUsers = snapshot.val() || {};
+    let needsUpdate = false;
+
+    console.log('📊 Existing users in Firebase:', Object.keys(existingUsers).length);
+
+    TEAM_MEMBERS.forEach(member => {
+      // Convert email to Firebase key: replace dots with underscores
+      const emailKey = member.email.toLowerCase().replace(/\./g, '_').replace(/@/g, '_at_');
+
+      if (!existingUsers[emailKey]) {
+        existingUsers[emailKey] = {
+          email: member.email,
+          name: member.name,
+          password: 'Precitech@1981',
+          role: member.role || 'user'
+        };
+        needsUpdate = true;
+        console.log('➕ Adding user:', member.name, '(' + emailKey + ') - Role:', member.role || 'user');
+      } else if (!existingUsers[emailKey].role) {
+        // Update existing users without role
+        existingUsers[emailKey].role = member.role || 'user';
+        needsUpdate = true;
+        console.log('🔄 Updating role for:', member.name);
+      }
+    });
+
+    if (needsUpdate) {
+      return database.ref('users').set(existingUsers).then(() => {
+        console.log('✅ Users seeded successfully! Total:', TEAM_MEMBERS.length);
+        showToast('Users seeded successfully!', 'success');
+      });
+    } else {
+      console.log('✅ All users already exist in Firebase');
+    }
+  }).catch(err => {
+    console.error('❌ seedUsers failed:', err);
+    console.error('Error details:', err.message);
+    alert('⚠️ Firebase Error: Cannot seed users.\n\nPlease set Firebase Rules to:\n{\n  "rules": {\n    ".read": true,\n    ".write": true\n  }\n}');
+  });
+}
+
+// ============================================================
+//  SEED DEMO TASKS
+// ============================================================
+function seedDemoTasks() {
+  const existing = getTasks();
+  if (existing.length > 0) return;
+  const now = new Date();
+  const d = n => new Date(now.getTime() + n * 86400000).toISOString();
+  const tasks = [
+    { taskId:'TASK-1001', date:d(-7), assignedBy:'tech.precitech1981@gmail.com', assignedTo:'raushan.precitech1981@gmail.com', description:'Prepare monthly production report for Q1', deadline:d(1), priority:'High', status:'Pending', completedDate:'', attachment:'', completionNote:'' },
+    { taskId:'TASK-1002', date:d(-5), assignedBy:'tech.precitech1981@gmail.com', assignedTo:'production.precitech1981@gmail.com', description:'Review and update supply chain documentation', deadline:d(7), priority:'Medium', status:'In Progress', completedDate:'', attachment:'', completionNote:'' },
+    { taskId:'TASK-1003', date:d(-3), assignedBy:'raushan.precitech1981@gmail.com', assignedTo:'tech.precitech1981@gmail.com', description:'Fix login bug in the admin panel', deadline:d(-1), priority:'High', status:'Completed', completedDate:d(-1), attachment:'', completionNote:'Fixed and deployed' },
+    { taskId:'TASK-1004', date:d(-5), assignedBy:'supply.precitech1981@gmail.com', assignedTo:'tech.precitech1981@gmail.com', description:'Coordinate with vendors for raw material procurement', deadline:d(0), priority:'Medium', status:'Pending', completedDate:'', attachment:'', completionNote:'' },
+    { taskId:'TASK-1005', date:d(-2), assignedBy:'tech.precitech1981@gmail.com', assignedTo:'vinay.precitech1981@gmail.com', description:'Update website content for upcoming product launch', deadline:d(7), priority:'Low', status:'Pending', completedDate:'', attachment:'', completionNote:'' }
+  ];
+  saveTasks(tasks);
+}
+
+// ============================================================
+//  AUTH
+// ============================================================
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass = document.getElementById('login-password').value;
+  const errBox = document.getElementById('login-error');
+
+  if (!email || !pass) {
+    showLoginError('कृपया ईमेल और पासवर्ड दर्ज करें। / Please enter email and password.');
+    return;
+  }
+
+  console.log('🔑 Login attempt for:', email);
+
+  const users = getUsers();
+  console.log('👥 Total users in Firebase:', Object.keys(users).length);
+
+  if (Object.keys(users).length === 0) {
+    showLoginError('⚠️ Database खाली है! कृपया 5 सेकंड प्रतीक्षा करें और पुनः प्रयास करें।\n\nIf issue persists, check Firebase Rules:\n{\n  "rules": {\n    ".read": true,\n    ".write": true\n  }\n}');
+    console.error('❌ No users found in Firebase. Seeding may have failed.');
+    return;
+  }
+
+  // Convert email to Firebase key format (underscores)
+  const emailKey = email.toLowerCase().replace(/\./g, '_').replace(/@/g, '_at_');
+
+  console.log('🔍 Searching for user with keys:', [email, emailKey]);
+  console.log('📋 Available user keys:', Object.keys(users).slice(0, 5), '...');
+
+  // Try both formats for backward compatibility
+  const user = users[emailKey] || users[email];
+
+  if (!user) {
+    showLoginError('❌ यह ईमेल पंजीकृत नहीं है: ' + email + '\n\nCheck spelling or contact admin.\n\nRegistered users: ' + TEAM_MEMBERS.length);
+    console.error('❌ User not found!');
+    console.error('Tried keys:', email, emailKey);
+    console.error('Sample registered emails:', TEAM_MEMBERS.slice(0, 3).map(m => m.email));
+    return;
+  }
+
+  console.log('✅ User found:', user.name, '(' + user.email + ')');
+
+  if (user.password !== pass) {
+    showLoginError('❌ गलत पासवर्ड! / Incorrect password.\n\nDefault password: Precitech@1981');
+    console.warn('⚠️ Wrong password for:', user.email);
+    return;
+  }
+
+  console.log('🎉 Login successful for:', user.name);
+
+  currentUser = user.email;
+  sessionStorage.setItem('precitech_user', currentUser);
+
+  errBox.classList.add('hidden');
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-layout').style.removeProperty('display');
+
+  initApp();
+}
+
+function showLoginError(msg) {
+  const b = document.getElementById('login-error');
+  b.querySelector('span').innerText = msg;
+  b.classList.remove('hidden');
+}
+
+function doLogout() {
+  currentUser = null;
+  sessionStorage.removeItem('precitech_user');
+  document.getElementById('app-layout').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+}
+
+function togglePass(inputId, eyeId) {
+  const inp = document.getElementById(inputId);
+  const eye = document.getElementById(eyeId);
+  if (inp.type === 'password') { inp.type = 'text'; eye.className = 'fa-solid fa-eye-slash'; }
+  else { inp.type = 'password'; eye.className = 'fa-solid fa-eye'; }
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+function initApp() {
+  allTasks = getTasks();
+  const users = getUsers();
+
+  // Get user with both key formats
+  const emailKey = currentUser.toLowerCase().replace(/\./g, '_').replace(/@/g, '_at_');
+  const user = users[currentUser.toLowerCase()] || users[emailKey];
+  const name = user ? user.name : getUserName(currentUser);
+  const userRole = user ? user.role : 'user';
+
+  document.getElementById('user-avatar').innerText = name.charAt(0).toUpperCase();
+  document.getElementById('sidebar-name').innerText = name;
+  document.getElementById('sidebar-email').innerText = currentUser;
+
+  // Admin check - use role from Firebase
+  const isAdmin = userRole === 'admin' || ADMIN_EMAILS.includes(currentUser);
+
+  if (isAdmin) {
+    document.getElementById('nav-admin').classList.remove('hidden');
+    document.getElementById('admin-actions-section').classList.remove('hidden');
+    document.getElementById('add-member-link').classList.remove('hidden');
+
+    // Populate admin user filter
+    const sel = document.getElementById('admin-filter-user');
+    TEAM_MEMBERS.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m.email;
+      o.innerText = m.name + ' (' + m.email.split('@')[0] + ')';
+      sel.appendChild(o);
+    });
+  }
+
+  // Populate assign-to dropdown
+  const asel = document.getElementById('assign-to');
+  if (asel) {
+    asel.innerHTML = '<option value="">-- Select Member --</option>';
+    TEAM_MEMBERS.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m.email; // Use email as unique identifier
+      o.innerText = m.name; // Display name only
+      asel.appendChild(o);
+    });
+  }
+
+  checkDeadlineNotifications();
+  showSection('dashboard');
+  setInterval(checkDeadlineNotifications, 60 * 60 * 1000);
+}
+
+// ============================================================
+//  NAVIGATION
+// ============================================================
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+  document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bg-orange-50','text-orange-600','font-bold'); b.classList.add('text-gray-600'); });
+
+  document.getElementById('section-' + name).classList.remove('hidden');
+  const nb = document.getElementById('nav-' + name);
+  if (nb) { nb.classList.add('bg-orange-50','text-orange-600'); nb.classList.remove('text-gray-600'); }
+
+  const titles = { dashboard: 'Dashboard', 'my-tasks': 'My Tasks', 'assigned-by': 'Assigned By Me', admin: 'Admin Panel' };
+  document.getElementById('page-title').innerText = titles[name] || name;
+
+  closeSidebar();
+  allTasks = getTasks();
+
+  if (name === 'dashboard') renderDashboard();
+  else if (name === 'my-tasks') renderMyTasks(allTasks);
+  else if (name === 'assigned-by') renderAssignedByMe(allTasks);
+  else if (name === 'admin') renderAdminPanel();
+}
+
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.remove('hidden');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.add('hidden');
+}
+
+// ============================================================
+//  HELPERS
+// ============================================================
+function fmt(iso) {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function isToday(iso) {
+  if (!iso) return false;
+  const d = new Date(iso); d.setHours(0,0,0,0);
+  const t = new Date(); t.setHours(0,0,0,0);
+  return d.getTime() === t.getTime();
+}
+
+function isTomorrow(iso) {
+  if (!iso) return false;
+  const d = new Date(iso); d.setHours(0,0,0,0);
+  const t = new Date(); t.setDate(t.getDate()+1); t.setHours(0,0,0,0);
+  return d.getTime() === t.getTime();
+}
+
+function isOverdue(iso, status) {
+  if (status === 'Completed' || !iso) return false;
+  const d = new Date(iso); d.setHours(0,0,0,0);
+  const t = new Date(); t.setHours(0,0,0,0);
+  return d < t;
+}
+
+// Calculate overdue days
+function getOverdueDays(deadline, status) {
+  if (status === 'Completed') return 0;
+  const now = new Date();
+  const due = new Date(deadline);
+  const diff = Math.floor((now - due) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : 0;
+}
+
+
+function priorityBadge(p) {
+  const cls = p === 'High' ? 'priority-high' : p === 'Low' ? 'priority-low' : 'priority-medium';
+  const ic = p === 'High' ? 'fa-arrow-up' : p === 'Low' ? 'fa-arrow-down' : 'fa-minus';
+  return `<span class="text-xs font-bold px-2 py-0.5 rounded-full ${cls}"><i class="fa-solid ${ic} mr-1"></i>${p}</span>`;
+}
+
+function statusBadge(s) {
+  const m = { Pending:{bg:'bg-amber-100',t:'text-amber-800'}, 'In Progress':{bg:'bg-indigo-100',t:'text-indigo-800'}, Completed:{bg:'bg-emerald-100',t:'text-emerald-800'} };
+  const c = m[s] || {bg:'bg-gray-100',t:'text-gray-800'};
+  return `<span class="${c.bg} ${c.t} text-xs font-bold px-2.5 py-1 rounded-full">${s}</span>`;
+}
+
+function generateId() { return 'TASK-' + Math.floor(Math.random()*9000+1000); }
+
+// ============================================================
+//  DASHBOARD RENDER
+// ============================================================
+function renderDashboard() {
+  const myTasks = allTasks.filter(t => t.assignedTo === currentUser);
+  const pending = myTasks.filter(t => t.status === 'Pending').length;
+  const inProg = myTasks.filter(t => t.status === 'In Progress').length;
+  const comp = myTasks.filter(t => t.status === 'Completed').length;
+  const total = pending + inProg + comp;
+  const rate = total > 0 ? Math.round(comp/total*100) + '%' : '0%';
+
+  document.getElementById('stat-total').innerText = total;
+  document.getElementById('stat-pending').innerText = pending;
+  document.getElementById('stat-progress').innerText = inProg;
+  document.getElementById('stat-rate').innerText = rate;
+  // Overdue badge stat
+  const overdueCount = myTasks.filter(t => isOverdue(t.deadline, t.status)).length;
+  const statOverdue = document.getElementById('stat-overdue');
+  if (statOverdue) statOverdue.innerText = overdueCount;
+
+  // Nav badges
+  const activeMyTasks = myTasks.filter(t => t.status !== 'Completed');
+  const nb = document.getElementById('nav-badge-my');
+  if (activeMyTasks.length > 0) { nb.innerText = activeMyTasks.length; nb.classList.remove('hidden'); }
+  else nb.classList.add('hidden');
+
+  const byMe = allTasks.filter(t => t.assignedBy === currentUser && t.assignedTo !== currentUser);
+  const nbb = document.getElementById('nav-badge-by');
+  if (byMe.length > 0) { nbb.innerText = byMe.length; nbb.classList.remove('hidden'); }
+  else nbb.classList.add('hidden');
+
+  // Due Today
+  const dueToday = myTasks.filter(t => isToday(t.deadline) && t.status !== 'Completed');
+  const dtAlert = document.getElementById('due-today-alert');
+  const dtList = document.getElementById('due-today-list');
+  if (dueToday.length > 0) {
+    dtAlert.classList.remove('hidden');
+    dtList.innerHTML = dueToday.map(t => `
+      <div class="flex items-center gap-2 text-sm text-orange-700">
+        <i class="fa-solid fa-circle-dot text-orange-400"></i>
+        <strong>${t.taskId}</strong> - ${t.description.substring(0,50)}${t.description.length>50?'...':''}
+        ${priorityBadge(t.priority||'Medium')}
+      </div>
+    `).join('');
+  } else dtAlert.classList.add('hidden');
+
+  // Recent
+  const sorted = [...allTasks].filter(t => t.assignedTo === currentUser || t.assignedBy === currentUser)
+    .sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0,8);
+  const rec = document.getElementById('dashboard-recent');
+  rec.innerHTML = sorted.length === 0 ? `<div class="p-8 text-center text-gray-400"><i class="fa-solid fa-inbox text-3xl mb-2 block"></i>No tasks yet</div>` :
+    sorted.map(t => {
+      const odRow = isOverdue(t.deadline, t.status) ? 'overdue-row' : isToday(t.deadline) && t.status !== 'Completed' ? 'due-today-row' : '';
+      return `
+        <div class="flex items-center gap-4 px-5 py-3.5 ${odRow} hover:bg-gray-50 transition">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono text-xs text-gray-400">${t.taskId}</span>
+              ${priorityBadge(t.priority||'Medium')}
+              ${isOverdue(t.deadline,t.status)?'<span class="text-xs text-red-600 font-bold"><i class="fa-solid fa-clock mr-1"></i>Overdue</span>':''}
+              ${isToday(t.deadline)&&t.status!=='Completed'?'<span class="text-xs text-orange-600 font-bold"><i class="fa-solid fa-fire mr-1"></i>Due Today</span>':''}
+            </div>
+            <div class="font-medium text-gray-800 truncate mt-0.5">${t.description}</div>
+            <div class="text-xs text-gray-400 mt-0.5">${t.assignedBy === currentUser ? '→ To: ' + getUserName(t.assignedTo) : '← From: ' + getUserName(t.assignedBy)} &bull; Deadline: ${fmt(t.deadline)}</div>
+          </div>
+          ${statusBadge(t.status)}
+        </div>`;
+    }).join('');
+}
+
+// ============================================================
+//  MY TASKS RENDER
+// ============================================================
+function renderMyTasks(tasks) {
+  const tbody = document.getElementById('table-to');
+  const mine = tasks.filter(t => t.assignedTo === currentUser).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  document.getElementById('count-to').innerText = mine.length;
+
+  if (mine.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400"><i class="fa-solid fa-check-circle text-4xl mb-2 block text-emerald-300"></i>No tasks assigned to you!</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = mine.map(t => {
+    const overdue = isOverdue(t.deadline, t.status);
+    const today = isToday(t.deadline);
+    const rowCls = overdue ? 'overdue-row' : today && t.status !== 'Completed' ? 'due-today-row' : '';
+    const isDisabled = t.status === 'Completed';
+
+    const overdueDays = getOverdueDays(t.deadline, t.status);
+    const overdueTag = overdue ? `<span class="text-xs text-red-600 font-bold ml-1"><i class="fa-solid fa-clock"></i> Overdue by ${overdueDays} day${overdueDays !== 1 ? 's' : ''}</span>` : '';
+    const todayTag = !overdue && today && t.status!=='Completed' ? `<span class="text-xs text-orange-600 font-bold ml-1"><i class="fa-solid fa-fire"></i> Today!</span>` : '';
+    const commCount = getComments(t.taskId).length;
+
+    return `
+      <tr class="hover:bg-gray-50 transition ${rowCls}">
+        <td class="px-5 py-3.5">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:linear-gradient(135deg,#630f0f,#ff6929)">
+              ${t.assignedBy.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div class="font-bold text-gray-800 text-sm">${getUserName(t.assignedBy).replace(/\./g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
+              <div class="text-xs text-gray-400">${fmt(t.date)}</div>
+            </div>
+          </div>
+        </td>
+        <td class="px-5 py-3.5">
+          <div class="font-medium text-gray-800 max-w-xs">${t.description}</div>
+          <div class="font-mono text-xs text-gray-400 mt-0.5">${t.taskId}</div>
+          ${t.completionNote ? `<div class="text-xs text-emerald-600 mt-0.5 italic">"${t.completionNote}"</div>` : ''}
+          ${t.attachment ? `<div class="text-xs text-blue-600 mt-0.5"><i class="fa-solid fa-paperclip mr-1"></i>${t.attachment}</div>` : ''}
+        </td>
+        <td class="px-5 py-3.5">${priorityBadge(t.priority||'Medium')}</td>
+        <td class="px-5 py-3.5 whitespace-nowrap">
+          <span class="${overdue?'text-red-600 font-bold':today&&t.status!=='Completed'?'text-orange-600 font-bold':'text-gray-700'}">${fmt(t.deadline)}</span>
+          ${overdueTag}${todayTag}
+        </td>
+        <td class="px-5 py-3.5">
+          ${isDisabled
+            ? statusBadge('Completed')
+            : `<select onchange="handleStatusChange('${t.taskId}', this.value, this)"
+                class="bg-gray-50 border border-gray-200 text-gray-800 text-xs font-bold px-2 py-1.5 rounded-lg focus:ring-2 focus:ring-orange-400 outline-none cursor-pointer">
+                <option value="Pending" ${t.status==='Pending'?'selected':''}>Pending</option>
+                <option value="In Progress" ${t.status==='In Progress'?'selected':''}>In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>`
+          }
+        </td>
+        <td class="px-5 py-3.5">
+          <button onclick="openComments('${t.taskId}')" class="text-blue-500 hover:text-blue-700 text-xs font-bold flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg transition">
+            <i class="fa-solid fa-comment"></i> ${commCount > 0 ? commCount : 'Add'} Note${commCount !== 1 ? 's' : ''}
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+// ============================================================
+//  ASSIGNED BY ME RENDER
+// ============================================================
+function renderAssignedByMe(tasks) {
+  const tbody = document.getElementById('table-by');
+  const mine = tasks.filter(t => t.assignedBy === currentUser && t.assignedTo !== currentUser)
+    .sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  document.getElementById('count-by').innerText = mine.length;
+
+  if (mine.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-gray-400"><i class="fa-solid fa-inbox text-4xl mb-2 block text-gray-300"></i>You haven't assigned any tasks yet.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = mine.map(t => {
+    const overdue = isOverdue(t.deadline, t.status);
+    const today = isToday(t.deadline);
+    const rowCls = overdue ? 'overdue-row' : today && t.status !== 'Completed' ? 'due-today-row' : '';
+    const commCount = getComments(t.taskId).length;
+    const overdueDays = getOverdueDays(t.deadline, t.status);
+
+    return `
+      <tr class="hover:bg-gray-50 transition ${rowCls}">
+        <td class="px-5 py-3.5">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">
+              ${t.assignedTo.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div class="font-bold text-indigo-700 text-sm">${getUserName(t.assignedTo).replace(/\./g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
+              <div class="text-xs text-gray-400">${t.assignedTo}</div>
+            </div>
+          </div>
+        </td>
+        <td class="px-5 py-3.5">
+          <div class="font-medium text-gray-800 max-w-xs">${t.description}</div>
+          <div class="font-mono text-xs text-gray-400 mt-0.5">${t.taskId}</div>
+          ${t.completionNote ? `<div class="text-xs text-emerald-600 mt-0.5 italic">"${t.completionNote}"</div>` : ''}
+          ${t.attachment ? `<div class="text-xs text-blue-600 mt-0.5"><i class="fa-solid fa-paperclip mr-1"></i>${t.attachment}</div>` : ''}
+        </td>
+        <td class="px-5 py-3.5">${priorityBadge(t.priority||'Medium')}</td>
+        <td class="px-5 py-3.5 whitespace-nowrap">
+          <span class="${overdue?'text-red-600 font-bold':today&&t.status!=='Completed'?'text-orange-600 font-bold':'text-gray-700'}">${fmt(t.deadline)}</span>
+          ${overdue?`<span class="text-xs text-red-600 font-bold block"><i class="fa-solid fa-clock"></i> Overdue by ${overdueDays} day${overdueDays !== 1 ? 's' : ''}</span>`:''}
+          ${!overdue&&today&&t.status!=='Completed'?'<span class="text-xs text-orange-600 font-bold block"><i class="fa-solid fa-fire"></i> Due Today</span>':''}
+        </td>
+        <td class="px-5 py-3.5">${statusBadge(t.status)}</td>
+        <td class="px-5 py-3.5">
+          <button onclick="openComments('${t.taskId}')" class="text-blue-500 hover:text-blue-700 text-xs font-bold flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg transition">
+            <i class="fa-solid fa-comment"></i> ${commCount > 0 ? commCount : 'Add'} Note${commCount !== 1 ? 's' : ''}
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+// ============================================================
+//  ADMIN PANEL
+// ============================================================
+function renderAdminPanel() {
+  const tasks = getTasks();
+  const uFilter = document.getElementById('admin-filter-user').value;
+  const sFilter = document.getElementById('admin-filter-status').value;
+
+  let filtered = tasks;
+  if (uFilter) filtered = filtered.filter(t => t.assignedTo === uFilter || t.assignedBy === uFilter);
+  if (sFilter) filtered = filtered.filter(t => t.status === sFilter);
+
+  filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  document.getElementById('admin-stat-total').innerText = filtered.length;
+  document.getElementById('admin-stat-pending').innerText = filtered.filter(t=>t.status==='Pending').length;
+  document.getElementById('admin-stat-progress').innerText = filtered.filter(t=>t.status==='In Progress').length;
+  document.getElementById('admin-stat-completed').innerText = filtered.filter(t=>t.status==='Completed').length;
+  document.getElementById('admin-task-count').innerText = filtered.length;
+
+  const tbody = document.getElementById('admin-table');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-gray-400"><i class="fa-solid fa-search text-3xl mb-2 block"></i>No tasks found</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(t => {
+    const overdue = isOverdue(t.deadline, t.status);
+    const today = isToday(t.deadline);
+    const rowCls = overdue ? 'overdue-row' : today && t.status !== 'Completed' ? 'due-today-row' : '';
+    const commCount = getComments(t.taskId).length;
+
+    return `
+      <tr class="hover:bg-gray-50 transition ${rowCls}">
+        <td class="px-5 py-3 font-mono text-xs text-gray-500">${t.taskId}</td>
+        <td class="px-5 py-3 text-sm">
+          <div class="font-medium text-gray-700">${getUserName(t.assignedBy)}</div>
+          <div class="text-xs text-gray-400">${t.assignedBy}</div>
+        </td>
+        <td class="px-5 py-3 text-sm">
+          <div class="font-medium text-indigo-600">${getUserName(t.assignedTo)}</div>
+          <div class="text-xs text-gray-400">${t.assignedTo}</div>
+        </td>
+        <td class="px-5 py-3">
+          <div class="text-sm text-gray-800 max-w-[200px]">${t.description}</div>
+          ${t.attachment ? `<div class="text-xs text-blue-600 mt-0.5"><i class="fa-solid fa-paperclip mr-1"></i>${t.attachment}</div>` : ''}
+          ${commCount > 0 ? `<div class="text-xs text-blue-500 mt-0.5"><i class="fa-solid fa-comment mr-1"></i>${commCount} note(s)</div>` : ''}
+        </td>
+        <td class="px-5 py-3">${priorityBadge(t.priority||'Medium')}</td>
+        <td class="px-5 py-3 whitespace-nowrap text-sm ${overdue?'text-red-600 font-bold':today&&t.status!=='Completed'?'text-orange-600 font-bold':'text-gray-600'}">${fmt(t.deadline)}${overdue?' ⚠️':''}</td>
+        <td class="px-5 py-3">${statusBadge(t.status)}</td>
+        <td class="px-5 py-3">
+          <button onclick="deleteTask('${t.taskId}')" class="text-red-600 hover:text-red-800 text-xs font-bold bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+// ============================================================
+//  STATUS CHANGE (triggers complete modal)
+// ============================================================
+function handleStatusChange(taskId, newStatus, selectEl) {
+  if (newStatus === 'Completed') {
+    pendingCompleteTaskId = taskId;
+    openModal('complete-modal');
+    document.getElementById('complete-file').value = '';
+    document.getElementById('complete-note').value = '';
+    // Revert select visually (will update after confirm)
+    const tasks = getTasks();
+    const t = tasks.find(x => x.taskId === taskId);
+    if (t) selectEl.value = t.status;
+  } else {
+    doUpdateStatus(taskId, newStatus, '', '', null);
+  }
+}
+
+function confirmComplete() {
+  const fileInput = document.getElementById('complete-file');
+  const note = document.getElementById('complete-note').value.trim();
+  const file = fileInput.files[0];
+
+  if (file && file.size > 5 * 1024 * 1024) { showToast('File too large! Max 5MB.', 'error'); return; }
+
+  const attachName = file ? file.name : '';
+  doUpdateStatus(pendingCompleteTaskId, 'Completed', note, attachName, file);
+
+  
+  // Send email to task creator
+  const task = allTasks.find(t => t.taskId === pendingCompleteTaskId);
+  if (task) {
+    simulateSendEmail({
+      to: task.assignedBy,
+      subject: `✅ Task Completed: ${task.taskId}`,
+      body: `Hi ${getUserName(task.assignedBy)},\n\n${getUserName(currentUser)} has marked the following task as COMPLETED:\n\nTask ID: ${task.taskId}\nDescription: ${task.description}\nCompleted by: ${getUserName(currentUser)}\n${note ? 'Note: ' + note : ''}\n${attachName ? 'Attachment: ' + attachName : ''}\n\nRegards,\nPrecitech Task Manager`
+    });
+  }
+    closeModal('complete-modal');
+  pendingCompleteTaskId = null;
+}
+
+function cancelComplete() {
+  // Just close the modal without marking as complete or sending email
+  closeModal('complete-modal');
+  pendingCompleteTaskId = null;
+  // Refresh to restore select value
+  allTasks = getTasks();
+  renderMyTasks(allTasks);
+}
+
+function doUpdateStatus(taskId, newStatus, note, attachName, file) {
+  const tasks = getTasks();
+  const idx = tasks.findIndex(t => t.taskId === taskId);
+  if (idx === -1) return;
+
+  const task = tasks[idx];
+  if (task.assignedTo !== currentUser) { showToast('You can only update your own tasks!', 'error'); return; }
+  if (task.status === 'Completed') { showToast('Task already Completed!', 'error'); return; }
+
+  tasks[idx].status = newStatus;
+  tasks[idx].completionNote = note;
+  tasks[idx].attachment = attachName;
+
+  if (newStatus === 'Completed') {
+    tasks[idx].completedDate = new Date().toISOString();
+    // Simulate sending completion email to assigner
+    simulateSendEmail({
+      to: task.assignedBy,
+      subject: `✅ Task Completed: ${taskId}`,
+      body: `Hi,\n\n"${task.description}" has been marked as Completed by ${currentUser}.\n\nTask ID: ${taskId}\nCompleted: ${new Date().toLocaleString()}\nNote: ${note || 'N/A'}\nAttachment: ${attachName || 'None'}\n\nRegards,\nPrecitech Task Manager`
+    });
+  } else {
+    tasks[idx].completedDate = '';
+  }
+
+  saveTasks(tasks);
+  allTasks = tasks;
+  renderMyTasks(allTasks);
+  renderDashboard();
+  showToast(newStatus === 'Completed' ? '✅ Task marked Complete! Notification sent.' : `Status updated to "${newStatus}"`, 'success');
+}
+
+// ============================================================
+//  ASSIGN TASK
+// ============================================================
+function submitTask() {
+  const to = document.getElementById('assign-to').value;
+  const desc = document.getElementById('assign-desc').value.trim();
+  const date = document.getElementById('assign-date').value;
+  const priority = document.getElementById('assign-priority').value;
+
+  console.log('📝 submitTask called - Assigning task to:', to);
+
+  if (!to) { showToast('Please select assignee!', 'error'); return; }
+  if (!desc) { showToast('Please enter a description!', 'error'); return; }
+  if (!date) { showToast('Please select a deadline!', 'error'); return; }
+
+  const tasks = getTasks();
+  console.log('📊 Current tasks count:', tasks.length);
+
+  const newTask = {
+    taskId: generateId(),
+    date: new Date().toISOString(),
+    assignedBy: currentUser,
+    assignedTo: to,
+    description: desc,
+    deadline: new Date(date + 'T23:59:59').toISOString(),
+    priority,
+    status: 'Pending',
+    completedDate: '',
+    attachment: '',
+    completionNote: ''
+  };
+
+  console.log('➕ New task created:', newTask.taskId);
+
+  tasks.unshift(newTask);
+  console.log('📊 Tasks array after adding new task:', tasks.length);
+
+  console.log('🔥 Calling saveTasks...');
+  saveTasks(tasks);
+  allTasks = tasks;
+
+  // Simulate task assignment email
+  simulateSendEmail({
+    to: to,
+    subject: `📋 New Task Assigned: ${newTask.taskId}`,
+    body: `Hi,\n\nA new task has been assigned to you by ${currentUser}.\n\nTask ID: ${newTask.taskId}\nDescription: ${desc}\nDeadline: ${fmt(newTask.deadline)}\nPriority: ${priority}\n\nPlease log in to Precitech Task Manager to view and update this task.\n\nRegards,\nPrecitech Task Manager`
+  });
+
+  closeModal('assign-modal');
+  document.getElementById('assign-to').value = '';
+  document.getElementById('assign-desc').value = '';
+  document.getElementById('assign-date').value = '';
+  document.getElementById('assign-priority').value = 'Medium';
+
+  renderDashboard();
+  showToast('Task assigned! Notification sent to assignee.', 'success');
+}
+
+// ============================================================
+//  COMMENTS
+// ============================================================
+function openComments(taskId) {
+  activeCommentTaskId = taskId;
+  const tasks = getTasks();
+  const t = tasks.find(x => x.taskId === taskId);
+  if (!t) return;
+
+  document.getElementById('comment-task-info').innerHTML =
+    `<span class="font-mono text-blue-600 mr-2">${taskId}</span> ${t.description.substring(0,60)}${t.description.length>60?'...':''}`;
+
+  renderComments(taskId);
+  document.getElementById('new-comment').value = '';
+  openModal('comments-modal');
+}
+
+function renderComments(taskId) {
+  const comments = getComments(taskId);
+  const list = document.getElementById('comments-list');
+  if (comments.length === 0) {
+    list.innerHTML = `<div class="text-center text-gray-400 py-6"><i class="fa-solid fa-comment-slash text-3xl mb-2 block"></i>No comments yet. Add the first one!</div>`;
+    return;
+  }
+  list.innerHTML = comments.map(c => `
+    <div class="comment-bubble pl-3 py-2 bg-white rounded-r-xl shadow-sm">
+      <div class="flex items-center gap-2 mb-1">
+        <div class="w-6 h-6 rounded-full text-white flex items-center justify-center text-xs font-bold" style="background:linear-gradient(135deg,#ff6929,#630f0f)">${c.user.charAt(0).toUpperCase()}</div>
+        <span class="text-xs font-bold text-gray-700">${getUserName(c.user)}</span>
+        <span class="text-xs text-gray-400 ml-auto">${new Date(c.time).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+      </div>
+      <p class="text-sm text-gray-700 ml-8">${c.text}</p>
+    </div>
+  `).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+function addComment() {
+  const text = document.getElementById('new-comment').value.trim();
+  if (!text) { showToast('Please write a comment!', 'error'); return; }
+
+  const comments = getComments(activeCommentTaskId);
+  comments.push({ user: currentUser, text, time: new Date().toISOString() });
+  saveComments(activeCommentTaskId, comments);
+
+  document.getElementById('new-comment').value = '';
+  renderComments(activeCommentTaskId);
+
+  // Refresh task list to show updated comment count
+  allTasks = getTasks();
+  renderMyTasks(allTasks);
+  renderAssignedByMe && renderAssignedByMe(allTasks);
+}
+
+// ============================================================
+//  DEADLINE NOTIFICATIONS (1 day before)
+// ============================================================
+function checkDeadlineNotifications() {
+  const tasks = getTasks();
+  const emailLog = getEmailLog();
+  const notifs = [];
+  let overdueCount = 0;
+
+  tasks.forEach(t => {
+    if (t.status === 'Completed') return;
+    if (t.assignedTo !== currentUser && t.assignedBy !== currentUser) return;
+
+    const isOneDay = isTomorrow(t.deadline);
+    const isTodayDeadline = isToday(t.deadline);
+    const overdueTask = isOverdue(t.deadline, t.status);
+
+    if (overdueTask) {
+      overdueCount++;
+      notifs.push({ ...t, overdue: true });
+    } else if (isOneDay || isTodayDeadline) {
+      notifs.push({ ...t, overdue: false });
+      // Only send email reminder once per day per task
+      const logKey = `reminder_${t.taskId}_${new Date().toDateString()}`;
+      const alreadySent = emailLog.some(e => e.key === logKey);
+      if (!alreadySent && isOneDay) {
+        simulateSendEmail({
+          to: t.assignedTo,
+          subject: `⚠️ Deadline Tomorrow: ${t.taskId}`,
+          body: `Hi ${getUserName(t.assignedTo)},\n\nThis is a reminder that the following task is due TOMORROW:\n\nTask ID: ${t.taskId}\nDescription: ${t.description}\nDeadline: ${fmt(t.deadline)}\nPriority: ${t.priority || 'Medium'}\n\nPlease complete this task before the deadline.\n\nRegards,\nPrecitech Task Manager`
+        }, logKey);
+      }
+    }
+  });
+
+  // Update bell icon with red badge for overdue
+  const dot = document.getElementById('notif-dot');
+  if (notifs.length > 0) {
+    dot.classList.remove('hidden');
+    if (overdueCount > 0) {
+      dot.style.background = '#dc2626'; // red for overdue
+      dot.innerText = overdueCount;
+      dot.style.width = '20px';
+      dot.style.height = '20px';
+      dot.style.fontSize = '10px';
+      dot.style.display = 'flex';
+      dot.style.alignItems = 'center';
+      dot.style.justifyContent = 'center';
+      dot.style.fontWeight = 'bold';
+      dot.style.color = 'white';
+    } else {
+      dot.style.background = '#ff6929'; // orange for upcoming
+      dot.innerText = '';
+      dot.style.width = '8px';
+      dot.style.height = '8px';
+    }
+  } else {
+    dot.classList.add('hidden');
+  }
+
+  // Render notif panel
+  const list = document.getElementById('notif-list');
+  if (notifs.length === 0) {
+    list.innerHTML = `<div class="p-4 text-center text-gray-400 text-sm"><i class="fa-solid fa-check-circle text-green-400 text-xl mb-1 block"></i>No upcoming deadlines</div>`;
+  } else {
+    list.innerHTML = notifs.map(t => {
+      const isOverdueTask = t.overdue;
+      const isTodayTask = isToday(t.deadline);
+      const bgColor = isOverdueTask ? 'bg-red-50 border border-red-200' : isTodayTask ? 'bg-orange-50 border border-orange-200' : 'bg-amber-50 border border-amber-200';
+      const iconColor = isOverdueTask ? 'text-red-600' : isTodayTask ? 'text-orange-500' : 'text-amber-500';
+      const textColor = isOverdueTask ? 'text-red-800' : isTodayTask ? 'text-orange-800' : 'text-amber-800';
+      const label = isOverdueTask ? `OVERDUE by ${getOverdueDays(t.deadline, t.status)} day${getOverdueDays(t.deadline, t.status) !== 1 ? 's' : ''}` : isTodayTask ? 'Due TODAY' : 'Due Tomorrow';
+
+      return `
+      <div class="p-3 rounded-xl mb-1 ${bgColor}">
+        <div class="flex items-start gap-2">
+          <i class="fa-solid fa-${isOverdueTask ? 'exclamation-triangle' : isTodayTask ? 'fire' : 'clock'} ${iconColor} mt-0.5"></i>
+          <div>
+            <div class="text-xs font-bold ${textColor}">${label}</div>
+            <div class="text-xs text-gray-700 mt-0.5">${t.taskId}: ${t.description.substring(0,40)}...</div>
+            <div class="text-xs text-gray-500">${getUserName(t.assignedTo)}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function toggleNotifPanel() {
+  const panel = document.getElementById('notif-panel');
+  panel.classList.toggle('hidden');
+  checkDeadlineNotifications();
+}
+
+// Close notif panel on outside click
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('notif-panel');
+  if (!panel.classList.contains('hidden') && !panel.contains(e.target) && !e.target.closest('button[onclick="toggleNotifPanel()"]')) {
+    panel.classList.add('hidden');
   }
 });
 
-// Get Tasks Assigned By Me
-app.get('/api/assigned-tasks', verifyToken, async (req, res) => {
+// ============================================================
+//  EMAIL SIMULATION
+// ============================================================
+function simulateSendEmail(emailData, logKey) {
+  // In production, this would call a backend API / Google Apps Script
+  // For now we log it to localStorage as an audit trail
+  const entry = { ...emailData, sentAt: new Date().toISOString() };
+  if (logKey) entry.key = logKey;
+  addEmailLog(entry);
+  console.log('[Email Simulation]', emailData);
+}
+
+// ============================================================
+//  FILTER
+// ============================================================
+function applyFilter() {
+  const from = document.getElementById('filter-from').value;
+  const to = document.getElementById('filter-to').value;
+  const status = document.getElementById('filter-status').value;
+  const priority = document.getElementById('filter-priority').value;
+
+  let filtered = getTasks();
+  if (from) filtered = filtered.filter(t => new Date(t.date) >= new Date(from));
+  if (to) { const td = new Date(to); td.setHours(23,59,59,999); filtered = filtered.filter(t => new Date(t.date) <= td); }
+  if (status) filtered = filtered.filter(t => t.status === status);
+  if (priority) filtered = filtered.filter(t => t.priority === priority);
+
+  filterActive = true;
+  renderMyTasks(filtered);
+}
+
+function clearFilter() {
+  document.getElementById('filter-from').value = '';
+  document.getElementById('filter-to').value = '';
+  document.getElementById('filter-status').value = '';
+  document.getElementById('filter-priority').value = '';
+  filterActive = false;
+  allTasks = getTasks();
+  renderMyTasks(allTasks);
+}
+
+function applyFilterByMe() {
+  const from = document.getElementById('filter-by-from').value;
+  const to = document.getElementById('filter-by-to').value;
+  const status = document.getElementById('filter-by-status').value;
+  const priority = document.getElementById('filter-by-priority').value;
+
+  let filtered = getTasks();
+  if (from) filtered = filtered.filter(t => new Date(t.date) >= new Date(from));
+  if (to) { const td = new Date(to); td.setHours(23,59,59,999); filtered = filtered.filter(t => new Date(t.date) <= td); }
+  if (status) filtered = filtered.filter(t => t.status === status);
+  if (priority) filtered = filtered.filter(t => t.priority === priority);
+
+  renderAssignedByMe(filtered);
+}
+
+function clearFilterByMe() {
+  document.getElementById('filter-by-from').value = '';
+  document.getElementById('filter-by-to').value = '';
+  document.getElementById('filter-by-status').value = '';
+  document.getElementById('filter-by-priority').value = '';
+  allTasks = getTasks();
+  renderAssignedByMe(allTasks);
+}
+
+// ============================================================
+//  EXPORT
+// ============================================================
+function exportTasks() {
+  const mine = allTasks.filter(t => t.assignedTo === currentUser);
+  exportToExcel(mine, 'My_Tasks');
+}
+
+function exportAssignedByMe() {
+  const byMe = allTasks.filter(t => t.assignedBy === currentUser && t.assignedTo !== currentUser);
+  exportToExcel(byMe, 'Assigned_By_Me');
+}
+
+function exportAllTasks() {
+  exportToExcel(getTasks(), 'All_Tasks_Admin');
+}
+
+function exportToExcel(tasks, filename) {
+  if (tasks.length === 0) { showToast('No tasks to export!', 'error'); return; }
+  const rows = tasks.map(t => ({
+    'Task ID': t.taskId,
+    'Assigned By': t.assignedBy,
+    'Assigned To': t.assignedTo,
+    'Description': t.description,
+    'Priority': t.priority || 'Medium',
+    'Deadline': fmt(t.deadline),
+    'Status': t.status,
+    'Date Assigned': fmt(t.date),
+    'Date Completed': t.completedDate ? fmt(t.completedDate) : '-',
+    'Completion Note': t.completionNote || '',
+    'Attachment': t.attachment || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Tasks');
+  XLSX.writeFile(wb, `Precitech_${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast('Exported to Excel!', 'success');
+}
+
+// ============================================================
+//  MODAL
+// ============================================================
+function openModal(id) {
+  const el = document.getElementById(id);
+  el.classList.add('active');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+// Close modal on overlay click (not for complete modal to prevent accidental close)
+['assign-modal', 'comments-modal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) closeModal(id);
+  });
+});
+
+// ============================================================
+//  TOAST
+// ============================================================
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  const content = document.getElementById('toast-content');
+  const icon = document.getElementById('toast-icon');
+  document.getElementById('toast-message').innerText = msg;
+
+  const styles = {
+    success: { bg: 'bg-emerald-600', icon: 'fa-check-circle' },
+    error: { bg: 'bg-red-600', icon: 'fa-times-circle' },
+    info: { bg: 'bg-blue-600', icon: 'fa-info-circle' }
+  };
+  const s = styles[type] || styles.info;
+  content.className = `px-5 py-3.5 rounded-xl shadow-xl text-white font-bold flex items-center gap-3 min-w-[260px] ${s.bg}`;
+  icon.className = `fa-solid ${s.icon} text-lg flex-shrink-0`;
+
+  toast.classList.remove('translate-y-20', 'opacity-0');
+  toast.classList.add('translate-y-0', 'opacity-100');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove('translate-y-0', 'opacity-100');
+    toast.classList.add('translate-y-20', 'opacity-0');
+  }, 4000);
+}
+
+// ============================================================
+//  ON LOAD
+// ============================================================
+
+// Admin: Delete task
+function deleteTask(taskId) {
+  if (!ADMIN_EMAILS.includes(currentUser)) {
+    showToast('Only admins can delete tasks', 'error');
+    return;
+  }
+
+  if (!confirm('Are you sure you want to delete task ' + taskId + '? This cannot be undone.')) {
+    return;
+  }
+
+  const tasks = getTasks();
+  const filtered = tasks.filter(t => t.taskId !== taskId);
+  saveTasks(filtered);
+
+  // Also delete comments
+  database.ref('comments/' + taskId).remove();
+
+  showToast('Task deleted successfully', 'success');
+  renderAdminPanel();
+}
+
+// ============================================================
+//  ADD NEW USER (Admin Only)
+// ============================================================
+function openAddUserFromAssign() {
+  closeModal('assign-modal');
+  openModal('add-user-modal');
+}
+
+function submitNewUser() {
+  const name = document.getElementById('new-user-name').value.trim();
+  const email = document.getElementById('new-user-email').value.trim().toLowerCase();
+  const role = document.getElementById('new-user-role').value;
+
+  // Validation
+  if (!name) {
+    showToast('Please enter user name', 'error');
+    return;
+  }
+  if (!email) {
+    showToast('Please enter user email', 'error');
+    return;
+  }
+  if (!email.includes('@')) {
+    showToast('Please enter a valid email address', 'error');
+    return;
+  }
+
+  // Check if user already exists
+  const users = getUsers();
+  const emailKey = email.toLowerCase().replace(/\./g, '_').replace(/@/g, '_at_');
+
+  if (users[email] || users[emailKey]) {
+    showToast('User with this email already exists!', 'error');
+    return;
+  }
+
+  console.log('➕ Adding new user:', name, email, role);
+
+  // Add to Firebase users
+  const newUserData = {
+    email: email,
+    name: name,
+    password: 'Precitech@1981',
+    role: role
+  };
+
+  database.ref('users/' + emailKey).set(newUserData).then(() => {
+    console.log('✅ User added to Firebase');
+
+    // Add to TEAM_MEMBERS array
+    TEAM_MEMBERS.push({ name: name, email: email, role: role });
+
+    // Update assign-to dropdown
+    const asel = document.getElementById('assign-to');
+    if (asel) {
+      const o = document.createElement('option');
+      o.value = email;
+      o.innerText = name;
+      asel.appendChild(o);
+    }
+
+    // Update admin filter dropdown if visible
+    const adminSel = document.getElementById('admin-filter-user');
+    if (adminSel && !adminSel.classList.contains('hidden')) {
+      const o = document.createElement('option');
+      o.value = email;
+      o.innerText = name + ' (' + email.split('@')[0] + ')';
+      adminSel.appendChild(o);
+    }
+
+    // Clear form
+    document.getElementById('new-user-name').value = '';
+    document.getElementById('new-user-email').value = '';
+    document.getElementById('new-user-role').value = 'user';
+
+    closeModal('add-user-modal');
+    showToast('✅ User added successfully! Default password: Precitech@1981', 'success');
+
+  }).catch(err => {
+    console.error('❌ Failed to add user:', err);
+    showToast('Failed to add user: ' + err.message, 'error');
+  });
+}
+
+window.onload = function() {
+  console.log('🚀 App starting...');
+
+  // Show loading while Firebase initializes
+  showFirebaseLoading();
+
+  // Wait for Firebase to be ready
+  if (typeof firebase === 'undefined') {
+    hideFirebaseLoading();
+    console.error('❌ Firebase not loaded!');
+    alert('Firebase connection failed. Please refresh the page.');
+    return;
+  }
+
+  console.log('✅ Firebase SDK loaded');
+
+  // Wait for initial data load FIRST, then setup listeners
+  let tasksLoaded = false;
+  let usersLoaded = false;
+
+  const checkLoaded = () => {
+    if (tasksLoaded && usersLoaded) {
+      console.log('✅ All initial data loaded from Firebase');
+      console.log('📊 Tasks in cache:', window.cachedTasks.length);
+      console.log('👥 Users in cache:', Object.keys(window.cachedUsers).length);
+
+      // NOW setup real-time listeners AFTER initial data is loaded
+      console.log('🔄 Setting up real-time listeners...');
+      setupTasksListener();
+      setupUsersListener();
+      setupCommentsListener();
+
+      // Seed users and demo tasks
+      seedUsers();
+      seedDemoTasks();
+
+      hideFirebaseLoading();
+
+      // Check existing session
+      const saved = sessionStorage.getItem('precitech_user');
+      if (saved) {
+        console.log('🔐 Restoring session for:', saved);
+        currentUser = saved;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-layout').style.removeProperty('display');
+        initApp();
+      } else {
+        console.log('🔓 No saved session. Showing login screen.');
+      }
+    }
+  };
+
+  // Load initial data
+  database.ref('tasks').once('value').then((snapshot) => {
+    const data = snapshot.val();
+    window.cachedTasks = data ? Object.values(data) : [];
+    allTasks = window.cachedTasks;
+    tasksLoaded = true;
+    console.log('📋 Initial tasks loaded:', window.cachedTasks.length);
+    checkLoaded();
+  }).catch(err => {
+    console.error('❌ Failed to load tasks:', err);
+    tasksLoaded = true;
+    checkLoaded();
+  });
+
+  database.ref('users').once('value').then((snapshot) => {
+    window.cachedUsers = snapshot.val() || {};
+    usersLoaded = true;
+    console.log('👥 Initial users loaded:', Object.keys(window.cachedUsers).length);
+    checkLoaded();
+  }).catch(err => {
+    console.error('❌ Failed to load users:', err);
+    usersLoaded = true;
+    checkLoaded();
+  });
+
+  // Set min date to today for deadline picker
+  const today = new Date().toISOString().split('T')[0];
+  const dateInput = document.getElementById('assign-date');
+  if (dateInput) dateInput.setAttribute('min', today);
+
+  console.log('✅ App initialization started - waiting for data...');
+};
+</script>
+
+<script>
+// ===== VOICE INPUT (Web Speech API) =====
+let recognition = null;
+let isListening = false;
+
+function toggleVoiceInput() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Aapka browser voice input support nahi karta. Chrome use karein.', 'error');
+    return;
+  }
+
+  if (isListening) {
+    stopVoiceInput();
+  } else {
+    startVoiceInput();
+  }
+}
+
+function startVoiceInput() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'hi-IN';          // Hindi primary
+  recognition.interimResults = true;   // Real-time interim results
+  recognition.continuous = true;       // Keep listening
+  recognition.maxAlternatives = 1;
+
+  const textarea = document.getElementById('assign-desc');
+  const micBtn = document.getElementById('mic-btn');
+  const micIcon = document.getElementById('mic-icon');
+  const voiceStatus = document.getElementById('voice-status');
+  const voiceStatusText = document.getElementById('voice-status-text');
+
+  let finalTranscript = textarea.value;
+
+  recognition.onstart = function() {
+    isListening = true;
+    micBtn.style.backgroundColor = '#dc2626';  // red when active
+    micIcon.className = 'fa-solid fa-stop text-white text-sm';
+    micBtn.title = 'Rokne ke liye dobara dabao';
+    voiceStatus.classList.remove('hidden');
+    voiceStatusText.textContent = 'Sun raha hoon... Bolte rahiye';
+  };
+
+  recognition.onresult = function(event) {
+    let interimTranscript = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalTranscript += transcript + ' ';
+      } else {
+        interimTranscript = transcript;
+      }
+    }
+    textarea.value = finalTranscript + interimTranscript;
+    voiceStatusText.textContent = 'Sun raha hoon... "' + (interimTranscript || '...') + '"';
+  };
+
+  recognition.onerror = function(event) {
+    let msg = 'Voice error: ' + event.error;
+    if (event.error === 'not-allowed') msg = 'Microphone access denied. Browser settings mein allow karein.';
+    if (event.error === 'no-speech') msg = 'Koi awaaz nahi suni. Dobara try karein.';
+    if (event.error === 'network') msg = 'Network error. Internet check karein.';
+    showToast(msg, 'error');
+    stopVoiceInput();
+  };
+
+  recognition.onend = function() {
+    if (isListening) {
+      // Auto restart if still supposed to be listening (continuous mode sometimes stops)
+      try { recognition.start(); } catch(e) { stopVoiceInput(); }
+    }
+  };
+
   try {
-    const tasks = await Task.find({ assignedBy: req.userId })
-      .populate('assignedBy', 'username email')
-      .populate('assignedTo', 'username email');
-    
-    res.json(tasks);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    recognition.start();
+  } catch(e) {
+    showToast('Microphone start nahi ho saka: ' + e.message, 'error');
   }
-});
+}
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+function stopVoiceInput() {
+  isListening = false;
+  if (recognition) {
+    recognition.onend = null; // prevent auto-restart
+    recognition.stop();
+    recognition = null;
+  }
+  const micBtn = document.getElementById('mic-btn');
+  const micIcon = document.getElementById('mic-icon');
+  const voiceStatus = document.getElementById('voice-status');
+  micBtn.style.backgroundColor = '#ff6929';  // orange when idle
+  micIcon.className = 'fa-solid fa-microphone text-white text-sm';
+  micBtn.title = 'Mic se bolo';
+  voiceStatus.classList.add('hidden');
+  // Trim trailing spaces
+  const textarea = document.getElementById('assign-desc');
+  textarea.value = textarea.value.trim();
+}
+
+// Stop mic if modal closes
+const _origCloseModal = window.closeModal;
+window.closeModal = function(id) {
+  if (isListening) stopVoiceInput();
+  if (_origCloseModal) _origCloseModal(id);
+};
+</script>
+
+
+<!-- Firebase Loading Overlay -->
+<div id="firebase-loading" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center z-[100]" style="display:none;">
+  <div class="bg-white rounded-2xl shadow-2xl p-8 text-center">
+    <div class="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+    <h3 class="font-bold text-gray-800 text-lg">Connecting to Firebase...</h3>
+    <p class="text-sm text-gray-500 mt-2">Loading real-time data</p>
+  </div>
+</div>
+
+
+<!-- Firebase Debug Panel (Top Right Corner) -->
+<div id="firebase-debug" style="position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.8);color:white;padding:10px 15px;border-radius:10px;font-size:11px;z-index:9999;font-family:monospace;max-width:250px;">
+  <div style="font-weight:bold;margin-bottom:5px;color:#ff6929;">🔥 Firebase Status</div>
+  <div id="firebase-status">Connecting...</div>
+  <div id="users-status" style="margin-top:3px;">Users: Loading...</div>
+  <div id="tasks-status" style="margin-top:3px;">Tasks: Loading...</div>
+  <button onclick="document.getElementById('firebase-debug').style.display='none'" style="margin-top:8px;background:#ff6929;border:none;color:white;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:10px;">Hide</button>
+</div>
+
+<script>
+// Update Firebase debug panel
+function updateDebugPanel(type, message, color = 'white') {
+  const el = document.getElementById(type + '-status');
+  if (el) {
+    el.innerHTML = message;
+    el.style.color = color;
+  }
+}
+
+// Debug panel is updated by the main listeners
+// No duplicate listeners needed here
+</script>
+
+</body>
+</html>
