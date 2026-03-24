@@ -15,141 +15,90 @@
     .slide-in { animation: slideIn 0.3s ease-out; }
     @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
+    /* Fix 1: Login Background Gradient as per your image */
+    .login-bg { 
+      background: linear-gradient(135deg, #d34e24 0%, #ff6929 50%, #e65c25 100%); 
+    }
+
     .modal-overlay { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(2px); }
     .section { display: block; }
     .hidden { display: none !important; }
     
-    /* Active Nav Styling */
-    .nav-btn.active { background-color: #FF6929; color: #630f0f; border-right: 4px solid #630f0f; }
+    /* Fix 2: Active Nav Styling as per your requirement */
+    .nav-btn.active { 
+      background-color: #FF6929 !important; 
+      color: #630f0f !important; 
+      border-right: 4px solid #630f0f !important; 
+    }
   </style>
 </head>
 <body class="bg-gray-50">
 
-<div id="login-page" class="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 flex items-center justify-center p-4">
-  <div class="w-full max-w-md">
-    <div class="bg-white rounded-2xl shadow-2xl p-8 fade-in">
+<div id="login-page" class="min-h-screen login-bg flex items-center justify-center p-4">
+  <div class="w-full max-w-sm">
+    <div class="bg-white rounded-[2.5rem] shadow-2xl p-10 fade-in">
+      
+      <div class="flex justify-center mb-6">
+        <div class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 flex items-center gap-2 shadow-sm">
+           <div class="bg-orange-600 text-white text-[10px] font-bold p-1 rounded-md">TP</div>
+           <div class="text-left">
+             <p class="text-[11px] font-black text-gray-800 leading-none uppercase">Precitech</p>
+             <p class="text-[7px] font-bold text-gray-500 uppercase tracking-tighter">Turnings Pvt. Ltd.</p>
+           </div>
+        </div>
+      </div>
+
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-800">Precitech</h1>
-        <p class="text-gray-500 text-sm mt-2">Task Management System</p>
+        <h1 class="text-2xl font-extrabold text-gray-800">Precitech Tasks</h1>
+        <p class="text-gray-400 text-xs mt-1">Sign in to your account</p>
       </div>
       
-      <div class="space-y-4">
+      <div class="space-y-5">
         <div>
-          <label class="block text-xs font-bold text-gray-600 mb-2">Email</label>
-          <input type="email" id="login-email" placeholder="your.email@precitech1981.com" 
-            class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-3 focus:ring-2 focus:ring-orange-400 outline-none">
+          <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
+          <input type="email" id="login-email" placeholder="yourname@precitech1981.com" 
+            class="w-full bg-white border border-orange-200 text-gray-900 text-sm rounded-xl py-3.5 px-4 focus:ring-2 focus:ring-orange-500 outline-none transition-all">
         </div>
         
         <div>
-          <label class="block text-xs font-bold text-gray-600 mb-2">Password</label>
+          <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Password</label>
           <input type="password" id="login-password" placeholder="Enter password" 
-            class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-3 focus:ring-2 focus:ring-orange-400 outline-none">
+            class="w-full bg-white border border-gray-100 text-gray-900 text-sm rounded-xl py-3.5 px-4 focus:ring-2 focus:ring-orange-500 outline-none transition-all">
         </div>
         
-        <button onclick="doLogin()" class="w-full text-white font-bold py-3 rounded-xl text-sm transition hover:opacity-90"
-          style="background: linear-gradient(135deg, #ff6929, #e55a1c);">
-          <i class="fa-solid fa-sign-in-alt mr-2"></i> Login
+        <button onclick="doLogin()" class="w-full text-white font-bold py-4 rounded-xl text-sm transition-all hover:brightness-110 active:scale-95 shadow-lg shadow-orange-100"
+          style="background: #ef6c33;">
+          <i class="fa-solid fa-sign-in-alt mr-2"></i> Sign In
         </button>
       </div>
       
-      <div class="mt-6 pt-6 border-t border-gray-100 text-center text-xs text-gray-500">
-        <p>👨‍💼 Demo: Use team member email</p>
-        <p>🔑 Password: <strong>Precitech@1981</strong></p>
+      <div class="mt-8 text-center text-[10px] text-gray-400 font-medium">
+        <p>Contact admin to register your account</p>
       </div>
     </div>
   </div>
 </div>
 
 <div id="main-app" class="hidden h-screen flex bg-gray-100">
-  
   <div id="sidebar" class="w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm">
-    
     <div class="p-4 border-b border-gray-100">
       <h2 class="font-bold text-gray-800 text-lg">Precitech</h2>
       <p class="text-xs text-gray-400">Task Manager</p>
     </div>
-    
-    <div class="p-4 border-b border-gray-100">
-      <div class="flex items-center gap-3">
-        <div id="user-avatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-          style="background: linear-gradient(135deg, #ff6929, #e55a1c);"></div>
-        <div class="min-w-0 flex-1">
-          <p id="sidebar-name" class="font-bold text-gray-800 text-sm truncate">User</p>
-          <p id="sidebar-email" class="text-xs text-gray-400 truncate">user@email.com</p>
-        </div>
-      </div>
-    </div>
-    
     <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-      <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50">
+      <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50">
         <i class="fa-solid fa-gauge-high w-5 text-center"></i> Dashboard
       </button>
-      <button onclick="showSection('my-tasks')" id="nav-my-tasks" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50">
-        <i class="fa-solid fa-list-check w-5 text-center"></i> My Tasks
-        <span id="nav-badge-my" class="ml-auto bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full hidden"></span>
-      </button>
-      <button onclick="showSection('assigned-by')" id="nav-assigned-by" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50">
-        <i class="fa-solid fa-paper-plane w-5 text-center"></i> Assigned By Me
-        <span id="nav-badge-by" class="ml-auto bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full hidden"></span>
-      </button>
-      <button onclick="showSection('admin')" id="nav-admin" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-600 hover:bg-orange-50 hidden">
-        <i class="fa-solid fa-user-shield w-5 text-center"></i> Admin Panel
-      </button>
-    </nav>
-    
-    <div id="admin-actions-section" class="px-3 py-4 border-t border-gray-100 hidden">
-      <button onclick="openModal('add-user-modal')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-orange-600 hover:bg-orange-50 transition">
-        <i class="fa-solid fa-user-plus w-5 text-center"></i> Add New User
-      </button>
-    </div>
-    
-    <div class="px-3 py-4 border-t border-gray-100">
-      <button onclick="doLogout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition">
-        <i class="fa-solid fa-sign-out-alt w-5 text-center"></i> Logout
-      </button>
-    </div>
-  </div>
-  
-  <div class="flex-1 flex flex-col overflow-hidden">
-    <header class="bg-white border-b border-gray-200 px-6 h-16 flex items-center justify-between flex-shrink-0 shadow-sm">
-      <h2 id="page-title" class="font-bold text-gray-800 text-lg">Dashboard</h2>
-      <button onclick="showSection('dashboard')" class="text-gray-500 hover:text-gray-700"><i class="fa-solid fa-refresh text-xl"></i></button>
-    </header>
-    
-    <main class="flex-1 overflow-auto p-6">
-      <div id="section-dashboard" class="section">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 fade-in">
-            <p class="text-xs font-bold text-gray-500 uppercase">My Tasks</p>
-            <h3 id="dash-my-count" class="text-3xl font-bold text-orange-600 mt-2">0</h3>
-          </div>
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 fade-in">
-            <p class="text-xs font-bold text-gray-500 uppercase">Completed</p>
-            <h3 id="dash-completed-count" class="text-3xl font-bold text-emerald-600 mt-2">0</h3>
-          </div>
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 fade-in">
-            <p class="text-xs font-bold text-gray-500 uppercase">Pending</p>
-            <h3 id="dash-pending-count" class="text-3xl font-bold text-amber-600 mt-2">0</h3>
-          </div>
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 fade-in">
-            <p class="text-xs font-bold text-gray-500 uppercase">Assigned by Me</p>
-            <h3 id="dash-by-count" class="text-3xl font-bold text-blue-600 mt-2">0</h3>
-          </div>
-        </div>
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h3 class="font-bold text-gray-800 mb-4">Quick Actions</h3>
-          <button onclick="openModal('assign-modal')" class="text-white font-bold py-2 px-6 rounded-lg text-sm transition hover:opacity-90"
-            style="background: linear-gradient(135deg, #ff6929, #e55a1c);">
-            <i class="fa-solid fa-plus mr-2"></i> Assign New Task
-          </button>
-        </div>
-      </div>
-
-      <div id="section-my-tasks" class="section hidden">
-          </div>
-    </main>
+      </nav>
   </div>
 </div>
+
+<script>
+  function doLogin() {
+    document.getElementById('login-page').classList.add('hidden');
+    document.getElementById('main-app').classList.remove('hidden');
+  }
+</script>
 
 </body>
 </html>
