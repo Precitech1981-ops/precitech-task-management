@@ -1,93 +1,206 @@
-## Precitech Task Manager Web App Builder — Logic
+const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+const cors = require('cors');
+require('dotenv').config();
 
-**Purpose:** Build, modify, and deploy a fully standalone Precitech Task Manager HTML web app with the features specified by the user, then serve it via CREAO static hosting.
+const app = express();
+app.use(express.json());
+app.use(cors());
 
-**Golden Path Summary:**
-- `fetch_file_from_s3` returned `downloaded: false` in this session → always fall back to `curl -L <url> -o index.html` to download existing HTML.
-- Google Drive direct download URL returns HTTP 400 → always use the thumbnail URL format: `https://drive.google.com/thumbnail?id=FILE_ID&sz=w500` for logo download.
-- All HTML modifications done via python3 string replacement (reliable, no external deps).
-- `static_serve_artifact` consistently succeeded as the deployment method — use it every time.
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/task-management', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
----
+// User Schema
+const userSchema = new mongoose.Schema({
+  username: { type: String, unique: true, required: true },
+  email: { type: String, unique: true, required: true },
+  password: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
 
-### Step-by-Step Workflow
+// Task Schema
+const taskSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: String,
+  assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  status: { type: String, enum: ['pending', 'in-progress', 'completed'], default: 'pending' },
+  dueDate: Date,
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
 
-1. **Read user inputs from Form:**
-   - `base_html_url`: URL of existing deployed HTML to modify (empty = build fresh).
-   - `features_to_add`: comma-separated list of features to add/change.
-   - `team_members`: newline-separated list of team member emails.
-   - `company_name`: company name for branding (default: "Precitech").
-   - `logo_drive_file_id`: Google Drive File ID for the company logo (default: `1bDqwh3FhbYvIbkEprVDh0NiZEG-RVfHv`).
-   - `admin_emails`: comma-separated admin email addresses.
-   - `default_password`: default login password for all users (default: `precitech@123`).
+const User = mongoose.model('User', userSchema);
+const Task = mongoose.model('Task', taskSchema);
 
-2. **Download or build base HTML:**
-   - If `base_html_url` is provided: run `curl -L '<base_html_url>' -o index.html` via Bash. Verify file size > 10000 bytes.
-   - If empty: generate a complete standalone HTML file from scratch following the app structure defined in the Artifact Template section.
+// Email Configuration
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  }
+});
 
-3. **Download and embed company logo:**
-   - Run: `curl -L 'https://drive.google.com/thumbnail?id=<logo_drive_file_id>&sz=w500' -o logo.png`
-   - Verify PNG magic bytes with python3: `open('logo.png','rb').read()[:4].hex()` must equal `'89504e47'`. If not, skip logo embedding.
-   - Convert to base64: `import base64; b64 = 'data:image/png;base64,' + base64.b64encode(open('logo.png','rb').read()).decode()`
-   - In index.html, replace all SVG placeholder logos (T:P circular SVG) with: `<img src="<b64_string>" alt="Logo" style="width:44px;height:44px;object-fit:contain;">`
-   - Verify with: `html.count('data:image/png;base64')` — must be >= 1.
+// Middleware: Verify JWT Token
+const verifyToken = (req, res, next) => {
+  const token = req.headers['authorization'];
+  if (!token) return res.status(403).json({ message: 'No token provided' });
+  
+  jwt.verify(token.split(' ')[1], process.env.JWT_SECRET || 'secret_key', (err, decoded) => {
+    if (err) return res.status(401).json({ message: 'Token expired' });
+    req.userId = decoded.id;
+    next();
+  });
+};
 
-4. **Apply requested feature modifications** (based on `features_to_add`):
+// Register User
+app.post('/api/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const user = new User({
+      username,
+      email,
+      password: hashedPassword
+    });
+    
+    await user.save();
+    res.status(201).json({ message: 'User registered successfully', user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-   **A. Voice Input (Mic) in Description field:**
-   - Wrap the `<textarea id="assign-desc">` in a `<div class="relative">`.
-   - Add inside the div (after textarea): `<button type="button" id="mic-btn" onclick="toggleVoiceInput()" style="position:absolute;bottom:8px;right:8px;background:#ff6929;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;"><i id="mic-icon" class="fa-solid fa-microphone" style="color:white;font-size:14px;"></i></button>`
-   - Add status div below: `<div id="voice-status" class="hidden" style="font-size:12px;color:#dc2626;margin-top:4px;">&#9679; Sun raha hoon...</div>`
-   - Add Voice JS block before `</body>` (use Web Speech API, lang=hi-IN, continuous=true, interimResults=true). See Scripts section for full JS code.
+// Login User
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) return res.status(401).json({ message: 'Invalid password' });
+    
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret_key', {
+      expiresIn: '7d'
+    });
+    
+    res.json({ token, user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-   **B. Admin Panel:**
-   - Add admin nav item in sidebar (visible only to admin emails list).
-   - Admin panel shows all users' tasks with filter + export CSV button.
-   - Admin detection: `adminEmails.includes(currentUser.email)`.
+// Get All Users (for assignment)
+app.get('/api/users', verifyToken, async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-   **C. Priority Levels (High/Medium/Low):**
-   - Add priority dropdown in assign modal.
-   - Render colored badge in task rows: High=red, Medium=amber, Low=green.
-   - Store in localStorage task object as `priority` field.
+// Assign Task
+app.post('/api/tasks', verifyToken, async (req, res) => {
+  try {
+    const { title, description, assignedToId, dueDate } = req.body;
+    
+    const task = new Task({
+      title,
+      description,
+      assignedBy: req.userId,
+      assignedTo: assignedToId,
+      dueDate
+    });
+    
+    await task.save();
+    
+    // Send Email Notification
+    const assignedUser = await User.findById(assignedToId);
+    const assignedByUser = await User.findById(req.userId);
+    
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: assignedUser.email,
+      subject: 'New Task Assigned',
+      html: `
+        <h2>New Task Assigned to You</h2>
+        <p><strong>Task Title:</strong> ${title}</p>
+        <p><strong>Description:</strong> ${description}</p>
+        <p><strong>Assigned by:</strong> ${assignedByUser.username}</p>
+        <p><strong>Due Date:</strong> ${dueDate}</p>
+      `
+    };
+    
+    transporter.sendMail(mailOptions, (err, info) => {
+      if (err) console.log('Email error:', err);
+      else console.log('Email sent:', info.response);
+    });
+    
+    res.status(201).json({ message: 'Task assigned', task });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-   **D. Comments/Notes per task:**
-   - Add "Add Note" button per task row. Opens a sub-modal with textarea.
-   - Store notes array in localStorage: `taskNotes[taskId] = [{text, author, time}]`.
+// Get My Tasks (Only tasks assigned to current user)
+app.get('/api/my-tasks', verifyToken, async (req, res) => {
+  try {
+    const tasks = await Task.find({ assignedTo: req.userId })
+      .populate('assignedBy', 'username email')
+      .populate('assignedTo', 'username email');
+    
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-   **E. Due Today Highlight:**
-   - In renderMyTasks(), check if deadline === today's date. Add orange left border `style="border-left: 4px solid #f97316"` to that row.
-   - Add dashboard alert div: "Tasks due today: N" in orange.
+// Update Task Status
+app.put('/api/tasks/:taskId', verifyToken, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const task = await Task.findById(req.params.taskId);
+    
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+    if (task.assignedTo.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    task.status = status;
+    task.updatedAt = Date.now();
+    await task.save();
+    
+    res.json({ message: 'Task updated', task });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-   **F. Export (CSV):**
-   - Add "Export CSV" button in each table section header.
-   - On click: build CSV string from visible rows, trigger download via `<a href="data:text/csv,...">`.
+// Get Tasks Assigned By Me
+app.get('/api/assigned-tasks', verifyToken, async (req, res) => {
+  try {
+    const tasks = await Task.find({ assignedBy: req.userId })
+      .populate('assignedBy', 'username email')
+      .populate('assignedTo', 'username email');
+    
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-   **G. Completion Popup with Document Attach:**
-   - When user changes status to "Completed": show a modal asking "Attach completion document?" with file input + notes textarea + Confirm button.
-   - On confirm: store file name + note in task record. Show toast "Task marked complete".
-
-   **H. Deadline -1 Day Reminder Bell:**
-   - On app load, check all tasks for deadlines = tomorrow. Show count on bell icon in navbar.
-   - Bell click shows dropdown of tasks due tomorrow.
-
-5. **Update team members list** in JS `getTeamMembers()` array using the provided `team_members` input. Replace existing array.
-
-6. **Update admin emails** in JS `const ADMIN_EMAILS = [...]` array using `admin_emails` input.
-
-7. **Update default password** in JS login validation using `default_password` input.
-
-8. **Update company name** — replace all "Precitech" branding strings with `company_name` input.
-
-9. **Validate final HTML:**
-   - Check: `'toggleVoiceInput' in html` (if voice feature requested).
-   - Check: `html.count('</html>') == 1` (valid single HTML doc).
-   - Check file size > 50000 bytes.
-
-10. **Deploy:**
-    - Run `mcp__creao_platform__static_serve_artifact` with `local_dir` = directory containing `index.html`, `index_file` = `index.html`.
-    - Capture the returned `url`.
-
-11. **Report result:**
-    - Call `mcp__creao_platform__report_task_result` with status=done, title="Precitech Task Manager", summary describing features added, output_files with the deployed URL.
-
-12. **Recommend 3 followup queries** via `mcp__creao_platform__recommend_user_followup_query`.
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
