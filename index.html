@@ -1,100 +1,93 @@
-330→              </select>
-   331→            </div>
-   332→            <div class="flex gap-2">
-   333→              <button onclick="applyFilter()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
-   334→                <i class="fa-solid fa-filter mr-1"></i> Filter
-   335→              </button>
-   336→              <button onclick="clearFilter()" class="border border-gray-200 text-gray-500 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg text-sm transition">Clear</button>
-   337→              <button onclick="exportTasks()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
-   338→                <i class="fa-solid fa-file-excel mr-1"></i> Export
-   339→              </button>
-   340→            </div>
-   341→          </div>
-   342→        </div>
-   343→
-   344→        <!-- Tasks Table -->
-   345→        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden fade-in">
-   346→          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-   347→            <h3 class="font-bold" style="color:#630f0f">Tasks Assigned To Me</h3>
-   348→            <span id="count-to" class="bg-orange-100 text-orange-800 text-xs font-bold px-2.5 py-1 rounded-full">0</span>
-   349→          </div>
-   350→          <div class="overflow-x-auto">
-   351→            <table class="w-full text-sm">
-   352→              <thead class="text-xs uppercase bg-gray-50 text-gray-500">
-   353→                <tr>
-   354→                  <th class="px-5 py-3 text-left">Assigned By</th>
-   355→                  <th class="px-5 py-3 text-left">Task</th>
-   356→                  <th class="px-5 py-3 text-left">Priority</th>
-   357→                  <th class="px-5 py-3 text-left">Deadline</th>
-   358→                  <th class="px-5 py-3 text-left">Status</th>
-   359→                  <th class="px-5 py-3 text-left">Notes</th>
-   360→                </tr>
-   361→              </thead>
-   362→              <tbody id="table-to" class="divide-y divide-gray-50"></tbody>
-   363→            </table>
-   364→          </div>
-   365→        </div>
-   366→      </div>
-   367→
-   368→      <!-- ====== ASSIGNED BY ME SECTION ====== -->
-   369→      <div id="section-assigned-by" class="section hidden">
-   370→        <div class="flex justify-between items-center mb-4">
-   371→          <div></div>
-   372→          <button onclick="exportAssignedByMe()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
-   373→            <i class="fa-solid fa-file-excel mr-1"></i> Export
-   374→          </button>
-   375→        </div>
-   376→        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden fade-in">
-   377→          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-   378→            <h3 class="font-bold" style="color:#630f0f">Tasks Assigned By Me</h3>
-   379→            <span id="count-by" class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">0</span>
-   380→          </div>
-   381→          <div class="overflow-x-auto">
-   382→            <table class="w-full text-sm">
-   383→              <thead class="text-xs uppercase bg-gray-50 text-gray-500">
-   384→                <tr>
-   385→                  <th class="px-5 py-3 text-left">Assigned To</th>
-   386→                  <th class="px-5 py-3 text-left">Task</th>
-   387→                  <th class="px-5 py-3 text-left">Priority</th>
-   388→                  <th class="px-5 py-3 text-left">Deadline</th>
-   389→                  <th class="px-5 py-3 text-left">Status</th>
-   390→                </tr>
-   391→              </thead>
-   392→              <tbody id="table-by" class="divide-y divide-gray-50"></tbody>
-   393→            </table>
-   394→          </div>
-   395→        </div>
-   396→      </div>
-   397→
-   398→      <!-- ====== ADMIN SECTION ====== -->
-   399→      <div id="section-admin" class="section hidden">
-   400→        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5 fade-in">
-   401→          <div class="flex flex-wrap gap-3 items-end">
-   402→            <div class="flex-1 min-w-[150px]">
-   403→              <label class="block text-xs font-bold text-gray-500 mb-1">Filter by Member</label>
-   404→              <select id="admin-filter-user" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
-   405→                <option value="">All Members</option>
-   406→              </select>
-   407→            </div>
-   408→            <div class="flex-1 min-w-[130px]">
-   409→              <label class="block text-xs font-bold text-gray-500 mb-1">Status</label>
-   410→              <select id="admin-filter-status" class="w-full border border-gray-200 text-gray-700 text-sm rounded-lg p-2 focus:ring-2 focus:ring-orange-400 outline-none">
-   411→                <option value="">All</option>
-   412→                <option value="Pending">Pending</option>
-   413→                <option value="In Progress">In Progress</option>
-   414→                <option value="Completed">Completed</option>
-   415→              </select>
-   416→            </div>
-   417→            <div class="flex gap-2">
-   418→              <button onclick="renderAdminPanel()" class="bg-gray-800 text-white font-bold py-2 px-4 rounded-lg text-sm">
-   419→                <i class="fa-solid fa-filter mr-1"></i> Filter
-   420→              </button>
-   421→              <button onclick="exportAllTasks()" class="bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
-   422→                <i class="fa-solid fa-file-excel mr-1"></i> Export All
-   423→              </button>
-   424→            </div>
-   425→          </div>
-   426→        </div>
-   427→
-   428→        <!-- Admin Stats -->
-   429→        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+## Precitech Task Manager Web App Builder — Logic
+
+**Purpose:** Build, modify, and deploy a fully standalone Precitech Task Manager HTML web app with the features specified by the user, then serve it via CREAO static hosting.
+
+**Golden Path Summary:**
+- `fetch_file_from_s3` returned `downloaded: false` in this session → always fall back to `curl -L <url> -o index.html` to download existing HTML.
+- Google Drive direct download URL returns HTTP 400 → always use the thumbnail URL format: `https://drive.google.com/thumbnail?id=FILE_ID&sz=w500` for logo download.
+- All HTML modifications done via python3 string replacement (reliable, no external deps).
+- `static_serve_artifact` consistently succeeded as the deployment method — use it every time.
+
+---
+
+### Step-by-Step Workflow
+
+1. **Read user inputs from Form:**
+   - `base_html_url`: URL of existing deployed HTML to modify (empty = build fresh).
+   - `features_to_add`: comma-separated list of features to add/change.
+   - `team_members`: newline-separated list of team member emails.
+   - `company_name`: company name for branding (default: "Precitech").
+   - `logo_drive_file_id`: Google Drive File ID for the company logo (default: `1bDqwh3FhbYvIbkEprVDh0NiZEG-RVfHv`).
+   - `admin_emails`: comma-separated admin email addresses.
+   - `default_password`: default login password for all users (default: `precitech@123`).
+
+2. **Download or build base HTML:**
+   - If `base_html_url` is provided: run `curl -L '<base_html_url>' -o index.html` via Bash. Verify file size > 10000 bytes.
+   - If empty: generate a complete standalone HTML file from scratch following the app structure defined in the Artifact Template section.
+
+3. **Download and embed company logo:**
+   - Run: `curl -L 'https://drive.google.com/thumbnail?id=<logo_drive_file_id>&sz=w500' -o logo.png`
+   - Verify PNG magic bytes with python3: `open('logo.png','rb').read()[:4].hex()` must equal `'89504e47'`. If not, skip logo embedding.
+   - Convert to base64: `import base64; b64 = 'data:image/png;base64,' + base64.b64encode(open('logo.png','rb').read()).decode()`
+   - In index.html, replace all SVG placeholder logos (T:P circular SVG) with: `<img src="<b64_string>" alt="Logo" style="width:44px;height:44px;object-fit:contain;">`
+   - Verify with: `html.count('data:image/png;base64')` — must be >= 1.
+
+4. **Apply requested feature modifications** (based on `features_to_add`):
+
+   **A. Voice Input (Mic) in Description field:**
+   - Wrap the `<textarea id="assign-desc">` in a `<div class="relative">`.
+   - Add inside the div (after textarea): `<button type="button" id="mic-btn" onclick="toggleVoiceInput()" style="position:absolute;bottom:8px;right:8px;background:#ff6929;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;"><i id="mic-icon" class="fa-solid fa-microphone" style="color:white;font-size:14px;"></i></button>`
+   - Add status div below: `<div id="voice-status" class="hidden" style="font-size:12px;color:#dc2626;margin-top:4px;">&#9679; Sun raha hoon...</div>`
+   - Add Voice JS block before `</body>` (use Web Speech API, lang=hi-IN, continuous=true, interimResults=true). See Scripts section for full JS code.
+
+   **B. Admin Panel:**
+   - Add admin nav item in sidebar (visible only to admin emails list).
+   - Admin panel shows all users' tasks with filter + export CSV button.
+   - Admin detection: `adminEmails.includes(currentUser.email)`.
+
+   **C. Priority Levels (High/Medium/Low):**
+   - Add priority dropdown in assign modal.
+   - Render colored badge in task rows: High=red, Medium=amber, Low=green.
+   - Store in localStorage task object as `priority` field.
+
+   **D. Comments/Notes per task:**
+   - Add "Add Note" button per task row. Opens a sub-modal with textarea.
+   - Store notes array in localStorage: `taskNotes[taskId] = [{text, author, time}]`.
+
+   **E. Due Today Highlight:**
+   - In renderMyTasks(), check if deadline === today's date. Add orange left border `style="border-left: 4px solid #f97316"` to that row.
+   - Add dashboard alert div: "Tasks due today: N" in orange.
+
+   **F. Export (CSV):**
+   - Add "Export CSV" button in each table section header.
+   - On click: build CSV string from visible rows, trigger download via `<a href="data:text/csv,...">`.
+
+   **G. Completion Popup with Document Attach:**
+   - When user changes status to "Completed": show a modal asking "Attach completion document?" with file input + notes textarea + Confirm button.
+   - On confirm: store file name + note in task record. Show toast "Task marked complete".
+
+   **H. Deadline -1 Day Reminder Bell:**
+   - On app load, check all tasks for deadlines = tomorrow. Show count on bell icon in navbar.
+   - Bell click shows dropdown of tasks due tomorrow.
+
+5. **Update team members list** in JS `getTeamMembers()` array using the provided `team_members` input. Replace existing array.
+
+6. **Update admin emails** in JS `const ADMIN_EMAILS = [...]` array using `admin_emails` input.
+
+7. **Update default password** in JS login validation using `default_password` input.
+
+8. **Update company name** — replace all "Precitech" branding strings with `company_name` input.
+
+9. **Validate final HTML:**
+   - Check: `'toggleVoiceInput' in html` (if voice feature requested).
+   - Check: `html.count('</html>') == 1` (valid single HTML doc).
+   - Check file size > 50000 bytes.
+
+10. **Deploy:**
+    - Run `mcp__creao_platform__static_serve_artifact` with `local_dir` = directory containing `index.html`, `index_file` = `index.html`.
+    - Capture the returned `url`.
+
+11. **Report result:**
+    - Call `mcp__creao_platform__report_task_result` with status=done, title="Precitech Task Manager", summary describing features added, output_files with the deployed URL.
+
+12. **Recommend 3 followup queries** via `mcp__creao_platform__recommend_user_followup_query`.
