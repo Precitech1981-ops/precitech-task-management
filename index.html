@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -92,7 +91,17 @@
       if (snap.val() === true) {
         console.log('✅ Connected to Firebase');
         // Update debug panel
-         
+        const statusEl = document.getElementById('firebase-status');
+        if (statusEl) statusEl.innerText = '✅ Connected';
+      } else {
+        console.log('⚠️ Disconnected from Firebase');
+        const statusEl = document.getElementById('firebase-status');
+        if (statusEl) statusEl.innerText = '❌ Disconnected';
+      }
+    });
+
+
+  
 
 // Firebase loading helpers
 function showFirebaseLoading() {
@@ -2154,6 +2163,29 @@ window.closeModal = function(id) {
   </div>
 </div>
 
+
+<!-- Firebase Debug Panel (Top Right Corner) -->
+<div id="firebase-debug" style="position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.8);color:white;padding:10px 15px;border-radius:10px;font-size:11px;z-index:9999;font-family:monospace;max-width:250px;">
+  <div style="font-weight:bold;margin-bottom:5px;color:#ff6929;">🔥 Firebase Status</div>
+  <div id="firebase-status">Connecting...</div>
+  <div id="users-status" style="margin-top:3px;">Users: Loading...</div>
+  <div id="tasks-status" style="margin-top:3px;">Tasks: Loading...</div>
+  <button onclick="document.getElementById('firebase-debug').style.display='none'" style="margin-top:8px;background:#ff6929;border:none;color:white;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:10px;">Hide</button>
+</div>
+
+<script>
+// Update Firebase debug panel
+function updateDebugPanel(type, message, color = 'white') {
+  const el = document.getElementById(type + '-status');
+  if (el) {
+    el.innerHTML = message;
+    el.style.color = color;
+  }
+}
+
+// Debug panel is updated by the main listeners
+// No duplicate listeners needed here
+</script>
 
 </body>
 </html>
